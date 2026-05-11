@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="<%= uiLang %>">
+<%- include('../partials/head', { title: t('page.menu_items.title'), restaurantName, section: 'admin' }) %>
+<body>
+
+<%- include('./partials/sidebar', { current, user, restaurantName }) %>
+
+<%
+  const langs   = settings.enabled_languages || ['en', 'es'];
+
+  function itemName(item) {
+    const t = (item.translations || []).find(t => t.lang === uiLang)
+           || (item.translations || []).find(t => t.lang === 'en')
+           || (item.translations || [])[0];
+    return t ? (t.name || '—') : '—';
+  }
+  function tagName(translations) {
+    const t = (translations || []).find(t => t.lang === primary) || (translations || [])[0];
+    return t ? (t.name || '') : '';
+  }
+  function catName(cat) {
+    return tagName(cat.translations);
+  }
+  // Returns the parent category object for a subcategory, or null
+  function parentCat(cat) {
+    if (!cat.parent_id) return null;
+    return categories.find(c => c.id === cat.parent_id) || null;
+  }
+%>
+
+<div class="main">
+  <header class="page-header page-header--minimal">
+    <h2 class="page-header__title"><%= t('page.menu_items.title') %></h2>
+    <%- include('./partials/lang-selector') %>
+  </header>
+
+  <main class="page-body page-body--minimal">
+    <div class="card table-card">
+      <div class="card__header card__header--brand">
+        <h3 class="card__title"><%= t('page.menu_items.card_title') %></h3>
+        <button type="button" class="filter-toggle" id="filterToggle" onclick="toggleFilterBar()" title="Search & filter">
+          <svg class="icon" style="width:1.1rem;height:1.1rem;"><use href="/admin/icons/sprite.svg#search"></use></svg>
+        </button>
+        <button onclick="openAddDishModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.menu_items.btn_create') %></button>
+      </div>
+      <div class="filter-bar" id="filterBar">
+        <input type="text" id="searchInput" placeholder="<%= t('page.menu_items.filter_search_placeholder') %>" oninput="filterItems()" class="form-input" style="width:15rem;" />
+        <select id="categoryFilter" onchange="filterItems()" class="form-select" style="width:auto;">
+          <option value=""><%= t('page.menu_items.filter_all_categories') %></option>
+          <% categories.filter(c => !c.parent_id).forEach(cat => { %>
+            <option value="<%= cat.id %>"><%= catName(cat) %></option>
+            <% if (cat.children) cat.children.forEach(child => { %>
+              <option value="<%= child.id %>">&nbsp;&nbsp;↳ <%= catName(child) %></option>
+            <% }) %>
+          <% }) %>
+        </select>
+        <div class="filter-radios">
+          <label class="form-check">
+            <input type="radio" name="availFilter" value="all" onchange="filterItems()" checked />
+            <span class="form-check__label"><%= t('page.menu_items.filter_all') %></span>
+          </label>
+          <label class="form-check">
+            <input type="radio" name="availFilter" value="active" onchange="filterItems()" />
+            <span class="form-check__label"><%= t('page.menu_items.filter_active') %></span>
+          </label>
+          <label class="form-check">
+            <input type="radio" name="availFilter" value="inactive" onchange="filterItems()" />
+            <span class="form-check__label"><%= t('page.menu_items.filter_inactive') %></span>
+          </label>
+        </div>
+        <span id="itemCount" class="filter-bar__count"></span>
+      </div>
+      <% if (items.length === 0) { %>
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <svg class="icon icon--empty-state"><use href="/admin/icons/sprite.svg#menu-items"></use></svg>
+          </div>
+          <p class="empty-state__text"><%= t('page.menu_items.empty_no_dishes') %></p>
+          <button onclick="openAddDishModal()" class="btn btn--pill btn--outline-brand btn--sm"><%= t('page.menu_items.btn_create') %></button>
+        </div>
+      <% } else { %>
+        <div class="table-scroll-x">
+        <table class="data-table" id="itemsTable">
+          <tbody id="itemsBody">
+            <% items.forEach(item => { %>
+              <tr class="item-row"
+                  data-id="<%= item.id %>"
+                  data-name="<%= itemName(item).toLowerCase() %>"
+                  data-categories="<%= item.categories.map(c => c.category_id).join(',') %>"
+                  data-available="<%= item.is_available %>">
+                <td class="col-thumb col-align-left">
+                  <% if (item.image_url) { %>
+                    <img src="<%= item.image_url %>" alt="" class="table-thumb table-thumb--clickable"
+                         onclick="openLightbox('<%= item.image_url %>')" />
+                  <% } else { %>
+                    <div class="table-thumb-placeholder">🍴</div>
+                  <% } %>
+                </td>
+                <td class="col-name col-align-left col-max-width">
+                  <p class="table-item__name"><%= itemName(item) %></p>
+                  <% const desc = (item.translations || []).find(t => t.lang === primary)?.description || (item.translations || [])[0]?.description || ''; %>
+                  <% if (desc) { %>
+                    <p class="table-item__desc"><%= desc.length > 80 ? desc.substring(0, 80) + '...' : desc %></p>
+                  <% } %>
+                </td>
+                <td class="col-categories col-align-left">
+                  <div class="category-breadcrumbs">
+                    <% let hasContent = false; %>
+                    <% item.categories.forEach(c => { %>
+                      <% hasContent = true; %>
+                      <% const parent = parentCat(c.category); %>
+                      <% if (parent) { %>
+                        <div class="breadcrumb-text"><span class="breadcrumb-muted"><%= catName(parent) %><span class="breadcrumb-sep"> › </span></span><%= catName(c.category) %></div>
+                      <% } else { %>
+                        <div class="breadcrumb-text"><%= catName(c.category) %></div>
+                      <% } %>
+                    <% }); %>
+                    <% if (item.is_special) { %>
+                      <% hasContent = true; %>
+                      <div class="breadcrumb-text"><%= t('page.menu_items.col_chefs_special') %></div>
+                    <% } %>
+                    <% if (!hasContent) { %>
+                      <span class="cell-empty">—</span>
+                    <% } %>
+                  </div>
+                </td>
+                <td class="col-translations col-align-center">
+                  <div class="tag-list">
+                    <% const translatedLangs = (item.translations || []).filter(t => t.name && t.description).map(t => t.lang); %>
+                    <% translatedLangs.forEach(lang => { %>
+                      <span class="tag tag--lang"><%= lang.toUpperCase() %></span>
+                    <% }); %>
+                    <% if (translatedLangs.length === 0) { %>
+                      <span class="cell-empty">—</span>
+                    <% } %>
+                  </div>
+                </td>
+                <td class="col-tags col-align-left">
+                  <div class="tag-status">
+                    <div class="tag-status__item">
+                      <span class="tag-status__label"><%= t('page.menu_items.col_allergens') %></span>
+                      <span class="tag-status__dot <%= (item.allergens && item.allergens.length > 0) ? 'tag-status__dot--success' : 'tag-status__dot--danger' %>"></span>
+                    </div>
+                    <div class="tag-status__item">
+                      <span class="tag-status__label"><%= t('page.menu_items.col_dietary') %></span>
+                      <span class="tag-status__dot <%= (item.dietary && item.dietary.length > 0) ? 'tag-status__dot--success' : 'tag-status__dot--danger' %>"></span>
+                    </div>
+                  </div>
+                </td>
+                <td class="col-price col-align-center">
+                  <span class="item-price <%= (item.has_discount && item.discount_value) ? 'item-price--muted' : '' %>">€<%= Number(item.price).toFixed(2) %></span>
+                  <% if (item.has_discount && item.discount_value) { %>
+                    <%
+                      const dv = Number(item.discount_value);
+                      let finalPrice = Number(item.price);
+                      if (item.discount_type === 'percent') finalPrice = finalPrice * (1 - dv / 100);
+                      else finalPrice = finalPrice - dv;
+                      finalPrice = Math.max(0, finalPrice);
+                    %>
+                    <br/><span class="item-discount">-<%= item.discount_type === 'percent' ? dv + '%' : '€' + dv.toFixed(2) %></span>
+                    <br/><span class="item-price">€<%= finalPrice.toFixed(2) %></span>
+                  <% } %>
+                </td>
+                <td class="col-toggle col-align-center">
+                  <label class="smb-avail-switch" onclick="toggleAvailability(<%= item.id %>, <%= item.is_available %>)">
+                    <input type="checkbox" <%= item.is_available ? 'checked' : '' %> readonly tabindex="-1" />
+                    <span class="smb-avail-label <%= item.is_available ? 'smb-avail-label--on' : 'smb-avail-label--off' %>">
+                      <%= item.is_available ? t('common.live') : t('common.off') %>
+                    </span>
+                  </label>
+                </td>
+                <td class="col-details col-align-center">
+                  <button class="btn-view" onclick="openViewModal(<%= item.id %>)" title="View details">
+                    <svg class="icon icon-closed"><use href="/admin/icons/sprite.svg#eye-closed"></use></svg>
+                    <svg class="icon icon-open"><use href="/admin/icons/sprite.svg#eye-open"></use></svg>
+                  </button>
+                </td>
+                <td class="col-delete col-align-center">
+                  <button class="btn-delete" onclick="deleteItem(<%= item.id %>, '<%= itemName(item).replace(/'/g, "\\'") %>')" title="Delete">
+                    <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        </div>
+      <% } %>
+    </div>
+  </main>
+</div>
+
+<%- include('./partials/modals/create-edit/menu-item', { langs, primary, categories, allergens, dietaryTags, catName, tagName }) %>
+<%- include('./partials/modals/view/menu-item') %>
+
+<!-- ── Image Lightbox ─────────────────────────────────────────────────────── -->
+<div id="imageLightbox" class="lightbox hidden" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="" class="lightbox__img" onclick="event.stopPropagation()" />
+  <button class="lightbox__close" onclick="closeLightbox()">&times;</button>
+</div>
+
+<%- include('./partials/scripts') %>
+
+<script>
+  const LANGS          = <%- JSON.stringify(langs) %>;
+  const PRIMARY        = '<%= primary %>';
+  const ITEMS_DATA     = <%- JSON.stringify(items) %>;
+  const CATEGORIES_DATA = <%- JSON.stringify(categories) %>;
+
+  function toggleFilterBar() {
+
+    const bar    = document.getElementById('filterBar');
+    const toggle = document.getElementById('filterToggle');
+    const open   = bar.classList.toggle('filter-bar--open');
+    toggle.classList.toggle('filter-toggle--active', open);
+    if (open) document.getElementById('searchInput')?.focus();
+  }
+
+  function filterItems() {
+    const search    = document.getElementById('searchInput').value.toLowerCase();
+    const catId     = document.getElementById('categoryFilter').value;
+    const availFilter = document.querySelector('input[name="availFilter"]:checked').value;
+    const rows      = document.querySelectorAll('.item-row');
+    let visible = 0;
+
+    rows.forEach(row => {
+      const nameMatch  = !search || row.dataset.name.includes(search);
+      const catMatch   = !catId  || row.dataset.categories.split(',').includes(catId);
+      const avail      = row.dataset.available === 'true';
+      const availMatch = availFilter === 'all'
+                      || (availFilter === 'active'   &&  avail)
+                      || (availFilter === 'inactive' && !avail);
+      const show = nameMatch && catMatch && availMatch;
+      row.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    document.getElementById('itemCount').textContent = `${visible} dish${visible !== 1 ? 'es' : ''}`;
+  }
+
+  filterItems();
+
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('imageLightbox').classList.remove('hidden');
+  }
+
+  function closeLightbox() {
+    document.getElementById('imageLightbox').classList.add('hidden');
+    document.getElementById('lightboxImg').src = '';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function updateTableRow(item) {
+    const row = document.querySelector(`.item-row[data-id="${item.id}"]`);
+    if (!row) return;
+
+    const primaryTrans = (item.translations || []).find(t => t.lang === PRIMARY) || (item.translations || [])[0] || {};
+    const name = primaryTrans.name || '—';
+    const desc = primaryTrans.description || '';
+
+    row.dataset.name       = name.toLowerCase();
+    row.dataset.categories = (item.categories || []).map(c => c.category_id).join(',');
+    row.dataset.available  = item.is_available;
+
+    // Thumbnail
+    const thumbCell = row.querySelector('.col-thumb');
+    if (thumbCell) {
+      thumbCell.innerHTML = item.image_url
+        ? `<img src="${esc(item.image_url)}" alt="" class="table-thumb table-thumb--clickable" onclick="openLightbox('${esc(item.image_url)}')" />`
+        : `<div class="table-thumb-placeholder">🍴</div>`;
+    }
+
+    // Name + description
+    const nameCell = row.querySelector('.col-name');
+    if (nameCell) {
+      const truncated = desc.length > 80 ? desc.substring(0, 80) + '...' : desc;
+      nameCell.innerHTML = `<p class="table-item__name">${esc(name)}</p>` +
+        (desc ? `<p class="table-item__desc">${esc(truncated)}</p>` : '');
+    }
+
+    // Categories
+    const catCell = row.querySelector('.col-categories');
+    if (catCell) {
+      const catData = typeof CATEGORIES_DATA !== 'undefined' ? CATEGORIES_DATA : [];
+      let inner = '';
+      let hasContent = false;
+      (item.categories || []).forEach(c => {
+        hasContent = true;
+        const cat      = c.category;
+        const catTrans = (cat.translations || []).find(t => t.lang === PRIMARY) || (cat.translations || [])[0] || {};
+        const catName  = catTrans.name || '?';
+        if (cat.parent_id) {
+          const parent      = catData.find(p => p.id === cat.parent_id);
+          const parentTrans = parent ? ((parent.translations || []).find(t => t.lang === PRIMARY) || (parent.translations || [])[0] || {}) : {};
+          inner += parent
+            ? `<div class="breadcrumb-text"><span class="breadcrumb-muted">${esc(parentTrans.name || '?')}<span class="breadcrumb-sep"> › </span></span>${esc(catName)}</div>`
+            : `<div class="breadcrumb-text">${esc(catName)}</div>`;
+        } else {
+          inner += `<div class="breadcrumb-text">${esc(catName)}</div>`;
+        }
+      });
+      if (item.is_special) { hasContent = true; inner += `<div class="breadcrumb-text">Chef's Special</div>`; }
+      if (!hasContent) inner = `<span class="cell-empty">—</span>`;
+      catCell.innerHTML = `<div class="category-breadcrumbs">${inner}</div>`;
+    }
+
+    // Translations
+    const transCell = row.querySelector('.col-translations');
+    if (transCell) {
+      const translatedLangs = (item.translations || []).filter(t => t.name && t.description).map(t => t.lang);
+      transCell.innerHTML = `<div class="tag-list">` +
+        (translatedLangs.length
+          ? translatedLangs.map(l => `<span class="tag tag--lang">${esc(l.toUpperCase())}</span>`).join('')
+          : `<span class="cell-empty">—</span>`) +
+        `</div>`;
+    }
+
+    // Allergen / dietary dots
+    const tagsCell = row.querySelector('.col-tags');
+    if (tagsCell) {
+      const hasAllergens = item.allergens && item.allergens.length > 0;
+      const hasDietary   = item.dietary   && item.dietary.length   > 0;
+      tagsCell.innerHTML =
+        `<div class="tag-status">` +
+          `<div class="tag-status__item"><span class="tag-status__label">Allergens:</span>` +
+            `<span class="tag-status__dot tag-status__dot--${hasAllergens ? 'success' : 'danger'}"></span></div>` +
+          `<div class="tag-status__item"><span class="tag-status__label">Dietary:</span>` +
+            `<span class="tag-status__dot tag-status__dot--${hasDietary ? 'success' : 'danger'}"></span></div>` +
+        `</div>`;
+    }
+
+    // Price
+    const priceCell = row.querySelector('.col-price');
+    if (priceCell) {
+      const hasDiscount = item.has_discount && item.discount_value;
+      let html = `<span class="item-price${hasDiscount ? ' item-price--muted' : ''}">€${Number(item.price).toFixed(2)}</span>`;
+      if (hasDiscount) {
+        const dv = Number(item.discount_value);
+        let final = Number(item.price);
+        if (item.discount_type === 'percent') final = final * (1 - dv / 100);
+        else final = final - dv;
+        final = Math.max(0, final);
+        const discStr = item.discount_type === 'percent' ? `${dv}%` : `€${dv.toFixed(2)}`;
+        html += `<br/><span class="item-discount">-${discStr}</span>`;
+        html += `<br/><span class="item-price">€${final.toFixed(2)}</span>`;
+      }
+      priceCell.innerHTML = html;
+    }
+
+    // Availability toggle
+    const toggleCell = row.querySelector('.col-toggle');
+    if (toggleCell) {
+      toggleCell.innerHTML =
+        `<label class="smb-avail-switch" onclick="toggleAvailability(${item.id}, ${item.is_available})">` +
+          `<input type="checkbox" ${item.is_available ? 'checked' : ''} readonly tabindex="-1" />` +
+          `<span class="smb-avail-label smb-avail-label--${item.is_available ? 'on' : 'off'}">` +
+            `${item.is_available ? 'Live' : 'Off'}` +
+          `</span>` +
+        `</label>`;
+    }
+
+    filterItems();
+  }
+</script>
+
+</body>
+</html>

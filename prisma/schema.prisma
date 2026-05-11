@@ -1,0 +1,535 @@
+// Prisma schema for Restaurant Menu Management System
+// White-label product — one instance per client, each with its own PostgreSQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: connection URL is configured in prisma.config.ts (for CLI/migrations)
+// and passed via datasourceUrl in the PrismaClient constructor (see src/config/database.js).
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── USERS ────────────────────────────────────────────────────────────────────
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("admin")
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  member_visits MemberVisit[]
+
+  @@map("users")
+}
+
+// ─── RESTAURANT SETTINGS ──────────────────────────────────────────────────────
+// Singleton row (always id = 1). Restaurant identity and configuration —
+// language preferences, branding. enabled_languages is a JSON array of BCP-47
+// codes. primary_language must always be included in enabled_languages.
+model RestaurantSettings {
+  id                Int      @id @default(1)
+  restaurant_name   String   @default("My Restaurant")
+  primary_language  String   @default("en")
+  enabled_languages Json     @default("[\"en\",\"es\"]")
+  logo_svg_url      String?
+  logo_light_url    String?
+  logo_dark_url     String?
+  updated_at        DateTime @updatedAt
+
+  @@map("restaurant_settings")
+}
+
+// ─── CLIENT ACCOUNT ───────────────────────────────────────────────────────────
+// Singleton row (id = 1). Developer/owner record for this client instance.
+// Stores the business relationship — personal contact, billing, plan.
+// Not public-facing — admin and super_admin only.
+model ClientAccount {
+  id                  Int      @id @default(1)
+  owner_name          String?
+  owner_email         String?
+  owner_phone         String?
+  billing_address     String?
+  tax_number          String?
+  plan                String?
+  notes               String?
+  has_menu                   Boolean  @default(true)
+  has_restaurant_hub         Boolean  @default(false)
+  has_gourmet_club           Boolean  @default(false)
+  max_languages              Int      @default(3)
+  gc_paper_form_front_url    String?
+  gc_paper_form_back_url     String?
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+
+  @@map("client_account")
+}
+
+// ─── RESTAURANT CONTACT ───────────────────────────────────────────────────────
+// Singleton row (id = 1). Public-facing contact details and social links.
+// Served via the public API to the restaurant's website.
+// whatsapp stores the number only — wa.me URL is constructed at render time.
+model RestaurantContact {
+  id                 Int      @id @default(1)
+  phone              String?
+  whatsapp           String?
+  email_general      String?
+  email_reservations String?
+  address            String?
+  map_url            String?
+  instagram_url      String?
+  facebook_url       String?
+  tripadvisor_url    String?
+  google_url         String?
+  twitter_url        String?
+  linkedin_url       String?
+  youtube_url        String?
+  updated_at         DateTime @updatedAt
+
+  @@map("restaurant_contact")
+}
+
+// ─── OPENING HOURS ────────────────────────────────────────────────────────────
+// Seven rows — one per day, seeded on setup. Supports split service hours
+// via two slots (e.g. 09:00–14:00 and 16:00–23:00).
+model OpeningHours {
+  id            Int      @id @default(autoincrement())
+  day           String   @unique  // "monday" | "tuesday" | ... | "sunday"
+  is_closed     Boolean  @default(false)
+  slot_1_from   String?
+  slot_1_to     String?
+  slot_2_active Boolean  @default(false)
+  slot_2_from   String?
+  slot_2_to     String?
+  note          String?
+  updated_at    DateTime @updatedAt
+
+  @@map("opening_hours")
+}
+
+// ─── OPENING HOURS OVERRIDE ───────────────────────────────────────────────────
+// Date-specific exceptions — bank holidays, private events, special hours.
+// The public API checks these first before falling back to the regular schedule.
+model OpeningHoursOverride {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @unique @db.Date
+  is_closed     Boolean  @default(true)
+  slot_1_from   String?
+  slot_1_to     String?
+  slot_2_active Boolean  @default(false)
+  slot_2_from   String?
+  slot_2_to     String?
+  note          String?
+  created_at    DateTime @default(now())
+
+  @@map("opening_hours_overrides")
+}
+
+// ─── ANNOUNCEMENT ─────────────────────────────────────────────────────────────
+// Singleton row (id = 1). Manager-built modal pushed to the website.
+// Returned by the public API only when is_active = true.
+model Announcement {
+  id         Int      @id @default(1)
+  is_active  Boolean  @default(false)
+  title      String?
+  body       String?
+  image_url  String?
+  cta_active Boolean  @default(false)
+  cta_label  String?
+  cta_url    String?
+  updated_at DateTime @updatedAt
+
+  @@map("announcement")
+}
+
+// ─── ALLERGEN TAGS ────────────────────────────────────────────────────────────
+model AllergenTag {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+
+  translations AllergenTagTranslation[]
+  menu_items   MenuItemAllergen[]
+
+  @@map("allergen_tags")
+}
+
+model AllergenTagTranslation {
+  allergen_id Int
+  lang        String
+  name        String
+
+  allergen AllergenTag @relation(fields: [allergen_id], references: [id], onDelete: Cascade)
+
+  @@id([allergen_id, lang])
+  @@map("allergen_tag_translations")
+}
+
+// ─── DIETARY TAGS ─────────────────────────────────────────────────────────────
+model DietaryTag {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+
+  translations DietaryTagTranslation[]
+  menu_items   MenuItemDietary[]
+
+  @@map("dietary_tags")
+}
+
+model DietaryTagTranslation {
+  dietary_id Int
+  lang       String
+  name       String
+
+  dietary_tag DietaryTag @relation(fields: [dietary_id], references: [id], onDelete: Cascade)
+
+  @@id([dietary_id, lang])
+  @@map("dietary_tag_translations")
+}
+
+// ─── COURSES ──────────────────────────────────────────────────────────────────
+// Global library of reusable course names (e.g. Starter, Main, Dessert).
+// Chefs pick from this library when building a set menu.
+// display_order controls the default order in the course library UI.
+model Course {
+  id            Int      @id @default(autoincrement())
+  display_order Int      @default(0)
+  created_at    DateTime @default(now())
+
+  translations     CourseTranslation[]
+  set_menu_courses SetMenuCourse[]
+
+  @@map("courses")
+}
+
+model CourseTranslation {
+  course_id Int
+  lang      String
+  name      String
+
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@id([course_id, lang])
+  @@map("course_translations")
+}
+
+// ─── CATEGORIES ───────────────────────────────────────────────────────────────
+// Self-referencing hierarchy: parent_id = null → top-level, parent_id → subcategory.
+// is_protected = true prevents deletion (e.g. Chef's Specials, Set Menus).
+// is_active = false hides the category from the front-end menu.
+// slug is used for public URL routing (/menu/starters).
+model Category {
+  id            Int      @id @default(autoincrement())
+  slug          String   @unique
+  display_order Int      @default(0)
+  is_protected  Boolean  @default(false)
+  is_active     Boolean  @default(true)
+  image_url     String?
+  notes         String?  // Internal admin notes — not shown to customers
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  parent_id Int?
+  parent    Category?  @relation("CategoryChildren", fields: [parent_id], references: [id])
+  children  Category[] @relation("CategoryChildren")
+
+  translations         CategoryTranslation[]
+  menu_item_categories MenuItemCategory[]
+  set_menu_categories  SetMenuCategory[]
+
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  category_id  Int
+  lang         String
+  name         String?
+  description  String?
+  public_notes String?
+
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([category_id, lang])
+  @@map("category_translations")
+}
+
+// ─── MENU ITEMS ───────────────────────────────────────────────────────────────
+// Regular dishes only. Set menus are now a separate model (SetMenu).
+// All user-facing text lives in MenuItemTranslation.
+model MenuItem {
+  id             Int      @id @default(autoincrement())
+  price          Decimal  @db.Decimal(10, 2)
+  image_url      String?
+  has_discount   Boolean  @default(false)
+  discount_type  String?  // "flat" | "percent"
+  discount_value Decimal? @db.Decimal(10, 2)
+  is_available   Boolean  @default(true)
+  is_special     Boolean  @default(false)
+  notes          String?  // Internal admin notes — not shown to customers
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  translations MenuItemTranslation[]
+  categories   MenuItemCategory[]
+  allergens    MenuItemAllergen[]
+  dietary      MenuItemDietary[]
+  set_menu_dishes SetMenuDish[]     // set menus this dish appears in
+
+  @@map("menu_items")
+}
+
+model MenuItemTranslation {
+  menu_item_id Int
+  lang         String
+  name         String?
+  description  String?
+  public_notes String?
+
+  menu_item MenuItem @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
+
+  @@id([menu_item_id, lang])
+  @@map("menu_item_translations")
+}
+
+// ─── JUNCTION: MenuItem ↔ Category ───────────────────────────────────────────
+model MenuItemCategory {
+  menu_item_id  Int
+  category_id   Int
+  display_order Int @default(0)
+
+  menu_item MenuItem  @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([menu_item_id, category_id])
+  @@map("menu_item_categories")
+}
+
+// ─── JUNCTION: MenuItem ↔ AllergenTag ────────────────────────────────────────
+model MenuItemAllergen {
+  menu_item_id Int
+  allergen_id  Int
+
+  menu_item MenuItem    @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
+  allergen  AllergenTag @relation(fields: [allergen_id], references: [id], onDelete: Cascade)
+
+  @@id([menu_item_id, allergen_id])
+  @@map("menu_item_allergens")
+}
+
+// ─── JUNCTION: MenuItem ↔ DietaryTag ─────────────────────────────────────────
+model MenuItemDietary {
+  menu_item_id Int
+  dietary_id   Int
+
+  menu_item   MenuItem   @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
+  dietary_tag DietaryTag @relation(fields: [dietary_id], references: [id], onDelete: Cascade)
+
+  @@id([menu_item_id, dietary_id])
+  @@map("menu_item_dietary")
+}
+
+// ─── SET MENUS ────────────────────────────────────────────────────────────────
+// A set menu is its own entity — not a MenuItem. It has its own price,
+// availability, categories, and internal course/dish structure.
+model SetMenu {
+  id             Int      @id @default(autoincrement())
+  price          Decimal  @db.Decimal(10, 2)
+  image_url      String?
+  has_discount   Boolean  @default(false)
+  discount_type  String?  // "flat" | "percent"
+  discount_value Decimal? @db.Decimal(10, 2)
+  is_available   Boolean  @default(true)
+  is_special     Boolean  @default(false)
+  display_order  Int      @default(0)
+  notes          String?  // Internal admin notes — not shown to customers
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  translations SetMenuTranslation[]
+  categories   SetMenuCategory[]
+  courses      SetMenuCourse[]
+  dishes       SetMenuDish[]
+
+  @@map("set_menus")
+}
+
+model SetMenuTranslation {
+  set_menu_id  Int
+  lang         String
+  name         String?
+  description  String?
+  public_notes String?
+
+  set_menu SetMenu @relation(fields: [set_menu_id], references: [id], onDelete: Cascade)
+
+  @@id([set_menu_id, lang])
+  @@map("set_menu_translations")
+}
+
+// ─── JUNCTION: SetMenu ↔ Category ────────────────────────────────────────────
+// A set menu can appear in any number of categories (e.g. "Set Menus" protected
+// category plus any seasonal or special categories).
+model SetMenuCategory {
+  set_menu_id   Int
+  category_id   Int
+  display_order Int @default(0)
+
+  set_menu SetMenu  @relation(fields: [set_menu_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([set_menu_id, category_id])
+  @@map("set_menu_categories")
+}
+
+// ─── JUNCTION: SetMenu ↔ Course ───────────────────────────────────────────────
+// Records which courses from the global library are used in a specific set menu,
+// and in what order. A course section can exist here before any dishes are added.
+// Translations hold a customer-facing note unique to this set menu / course pairing.
+model SetMenuCourse {
+  id            Int     @id @default(autoincrement())
+  set_menu_id   Int
+  course_id     Int
+  display_order Int     @default(0)
+  notes         String? // Internal admin notes — not shown to customers
+
+  set_menu     SetMenu                  @relation(fields: [set_menu_id], references: [id], onDelete: Cascade)
+  course       Course                   @relation(fields: [course_id],   references: [id], onDelete: Restrict)
+  translations SetMenuCourseTranslation[]
+  dishes       SetMenuDish[]
+
+  @@unique([set_menu_id, course_id])
+  @@map("set_menu_courses")
+}
+
+model SetMenuCourseTranslation {
+  set_menu_course_id Int
+  lang               String
+  notes              String?
+
+  set_menu_course SetMenuCourse @relation(fields: [set_menu_course_id], references: [id], onDelete: Cascade)
+
+  @@id([set_menu_course_id, lang])
+  @@map("set_menu_course_translations")
+}
+
+// ─── JUNCTION: SetMenu ↔ Dish ─────────────────────────────────────────────────
+// Links a dish (MenuItem) into a set menu, optionally under a course section.
+// A dish can be added to a set menu with no course (set_menu_course_id = null).
+// Translations hold a customer-facing note unique to this dish in this set menu.
+model SetMenuDish {
+  id                 Int  @id @default(autoincrement())
+  set_menu_id        Int
+  dish_id            Int
+  set_menu_course_id Int?
+  display_order      Int  @default(0)
+
+  set_menu        SetMenu        @relation(fields: [set_menu_id],        references: [id], onDelete: Cascade)
+  dish            MenuItem       @relation(fields: [dish_id],            references: [id], onDelete: Restrict)
+  set_menu_course SetMenuCourse? @relation(fields: [set_menu_course_id], references: [id], onDelete: SetNull)
+  translations    SetMenuDishTranslation[]
+
+  @@unique([set_menu_id, dish_id])
+  @@map("set_menu_dishes")
+}
+
+model SetMenuDishTranslation {
+  set_menu_dish_id Int
+  lang             String
+  notes            String?
+
+  set_menu_dish SetMenuDish @relation(fields: [set_menu_dish_id], references: [id], onDelete: Cascade)
+
+  @@id([set_menu_dish_id, lang])
+  @@map("set_menu_dish_translations")
+}
+
+// ─── GOURMET CLUB ─────────────────────────────────────────────────────────────
+// Loyalty and membership platform for valued guests.
+// member_number is the auto-increment id, displayed as "GC-001" in the UI.
+// source tracks the sign-up channel: "admin" | "qr_menu" | "reservation"
+model GourmetClubMember {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  email              String?
+  phone              String?
+  birthday_month     Int?      // 1–12
+  birthday_day       Int?      // 1–31
+  source             String    @default("admin")
+  notes              String?
+  is_active          Boolean   @default(true)
+  marketing_consent  Boolean   @default(false)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  visits      MemberVisit[]
+  raffle_wins Raffle[]
+
+  @@map("gourmet_club_members")
+}
+
+// ─── MEMBER VISITS ────────────────────────────────────────────────────────────
+// Records each confirmed visit by a club member.
+// source: "manual" (staff-entered) | "reservation" | "pos" (future integrations)
+// added_by is null when created automatically via reservation or pos.
+model MemberVisit {
+  id         Int      @id @default(autoincrement())
+  member_id  Int
+  date       DateTime @db.Date
+  notes      String?
+  source     String   @default("manual")
+  added_by   Int?
+  created_at DateTime @default(now())
+
+  member GourmetClubMember @relation(fields: [member_id], references: [id], onDelete: Cascade)
+  user   User?             @relation(fields: [added_by],  references: [id], onDelete: SetNull)
+
+  @@map("member_visits")
+}
+
+// ─── STATIC TRANSLATIONS ─────────────────────────────────────────────────────
+// Key/value store for static text on customer-facing menu pages.
+// Keys are dot-namespaced strings (e.g. "menu.footer.tagline").
+// Seeded automatically on startup by src/helpers/staticTextSync.js.
+model StaticTranslation {
+  key        String
+  lang       String
+  value      String   @default("")
+  updated_at DateTime @updatedAt
+
+  @@id([key, lang])
+  @@map("static_translations")
+}
+
+// ─── RAFFLES ──────────────────────────────────────────────────────────────────
+// Each raffle has a defined period and prize. The draw picks one eligible member
+// at random. eligibility controls the pool:
+//   "all"  → every active member at draw time
+//   "new"  → only members who joined between start_date and end_date
+// status: "active" | "drawn" | "cancelled"
+// period_type is informational — dates define the actual window.
+model Raffle {
+  id                Int       @id @default(autoincrement())
+  title             String
+  description       String?
+  prize             String
+  prize_description String?
+  image_url         String?
+  period_type       String    // "monthly" | "quarterly" | "biannual" | "annual" | "custom"
+  eligibility String    @default("all")
+  start_date  DateTime  @db.Date
+  end_date    DateTime  @db.Date
+  draw_date   DateTime? @db.Date
+  status      String    @default("active")
+  winner_id   Int?
+  drawn_at    DateTime?
+  notes       String?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  winner GourmetClubMember? @relation(fields: [winner_id], references: [id], onDelete: SetNull)
+
+  @@map("raffles")
+}

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="<%= uiLang %>">
+<%- include('../partials/head', { title: t('page.set_menus.title'), restaurantName, section: 'admin' }) %>
+<body>
+
+<%- include('./partials/sidebar', { current, user, restaurantName }) %>
+
+<%
+  const langs   = settings.enabled_languages || ['en', 'es'];
+
+  function tagName(translations) {
+    const t = (translations || []).find(t => t.lang === uiLang)
+           || (translations || []).find(t => t.lang === 'en')
+           || (translations || [])[0];
+    return t ? (t.name || '') : '';
+  }
+  function catName(cat) { return tagName(cat.translations); }
+
+  function tName(translations) {
+    if (!translations || !translations.length) return '—';
+    const t = translations.find(t => t.lang === primary) || translations[0];
+    return t ? (t.name || '—') : '—';
+  }
+  function tNote(translations) {
+    if (!translations || !translations.length) return '';
+    const t = translations.find(t => t.lang === primary) || translations[0];
+    return t ? (t.notes || '') : '';
+  }
+%>
+
+<div class="main">
+  <header class="page-header page-header--minimal">
+    <h2 class="page-header__title"><%= t('page.set_menus.title') %></h2>
+    <%- include('./partials/lang-selector') %>
+  </header>
+
+  <main class="page-body page-body--minimal">
+  <div class="card table-card smb-card">
+
+    <!-- Card title row — same pattern as all other pages -->
+    <div class="card__header card__header--brand">
+      <h3 class="card__title"><%= t('page.set_menus.card_title') %></h3>
+      <button onclick="openCreateModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.set_menus.btn_create') %></button>
+    </div>
+
+    <div class="smb-tabs">
+      <button class="smb-tabs__btn smb-tabs__btn--active" id="smb-tab-list" onclick="showListTab()"><%= t('page.set_menus.tab_list') %></button>
+      <button class="smb-tabs__btn" id="smb-tab-detail" onclick="showDetailTab()"><%= t('page.set_menus.tab_builder') %></button>
+    </div>
+
+    <div class="smb-split" id="smb-split">
+
+    <!-- ── LEFT PANEL ─────────────────────────────────────────────── -->
+    <div class="smb-panel">
+      <div class="smb-panel__header">
+        <span class="smb-panel__title"><%= t('page.set_menus.panel_title') %></span>
+      </div>
+
+      <div class="smb-panel__list" id="smb-list">
+        <% if (setMenus.length === 0) { %>
+          <div class="smb-panel__empty"><%= t('page.set_menus.panel_empty') %></div>
+        <% } %>
+        <% setMenus.forEach(sm => { %>
+          <div class="smb-item" data-sm-id="<%= sm.id %>" onclick="selectSetMenu(<%= sm.id %>)">
+            <span class="smb-item__handle">&#8801;</span>
+            <span class="smb-avail smb-avail--<%= sm.is_available ? 'on' : 'off' %>"></span>
+            <div class="smb-item__info">
+              <span class="smb-item__name"><%= tName(sm.translations) %></span>
+              <span class="smb-item__price">€<%= Number(sm.price).toFixed(2) %></span>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- Courses Library -->
+      <div class="smb-library" id="smb-library">
+        <div class="smb-library__header" onclick="toggleLibrary()">
+          <span><%= t('page.set_menus.course_library') %></span>
+          <svg class="icon smb-library__chevron" id="smb-lib-chevron"><use href="/admin/icons/sprite.svg#chevron-down"></use></svg>
+        </div>
+        <div class="smb-library__body hidden" id="smb-library-body">
+          <div class="smb-library__list" id="smb-library-list">
+            <% if (courses.length === 0) { %>
+              <div class="smb-panel__empty"><%= t('page.set_menus.library_empty') %></div>
+            <% } %>
+            <% courses.forEach(c => { %>
+              <div class="smb-library__item">
+                <span class="smb-library__item-name"><%= tName(c.translations) %></span>
+                <div class="smb-course__actions">
+                  <button class="btn-view" onclick='openEditCourseModal(<%- JSON.stringify(c) %>)' title="Edit">
+                    <svg class="icon icon-closed"><use href="/admin/icons/sprite.svg#eye-closed"></use></svg>
+                    <svg class="icon icon-open"><use href="/admin/icons/sprite.svg#eye-open"></use></svg>
+                  </button>
+                  <button class="btn-delete" onclick="deleteCourse(<%= c.id %>, '<%= tName(c.translations).replace(/'/g, "\\'") %>')" title="Delete">
+                    <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <div class="smb-library__footer">
+            <button onclick="openAddCourseModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm">Create Course</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT BUILDER ──────────────────────────────────────────── -->
+    <div class="smb-builder">
+
+      <!-- Empty state -->
+      <div class="smb-empty" id="smb-empty">
+        <div class="empty-state__icon">
+          <svg class="icon icon--empty-state"><use href="/admin/icons/sprite.svg#set-menus"></use></svg>
+        </div>
+        <p class="empty-state__text"><%= t('page.set_menus.empty_select') %></p>
+        <button onclick="openCreateModal()" class="btn btn--pill btn--outline-brand btn--sm"><%= t('page.set_menus.btn_create') %></button>
+      </div>
+
+      <!-- Builder content (JS-rendered) -->
+      <div class="smb-content hidden" id="smb-content">
+
+        <!-- Sticky header -->
+        <div class="smb-header">
+          <div class="smb-header__row">
+            <h3 class="smb-header__name" id="smb-name">—</h3>
+            <span class="smb-header__price" id="smb-price"></span>
+            <label class="smb-avail-switch" title="Toggle availability">
+              <input type="checkbox" id="smb-avail-chk" onchange="toggleAvailability()">
+              <span class="smb-avail-label" id="smb-avail-label">Live</span>
+            </label>
+            <button class="btn-view" onclick="openSmViewModal(activeSmId)" title="View details">
+              <svg class="icon icon-closed"><use href="/admin/icons/sprite.svg#eye-closed"></use></svg>
+              <svg class="icon icon-open"><use href="/admin/icons/sprite.svg#eye-open"></use></svg>
+            </button>
+            <button class="btn-delete" onclick="confirmDeleteSm()" title="Delete">
+              <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </button>
+          </div>
+          <div class="smb-header__bar">
+            <img id="smb-img" src="" alt="" class="table-thumb table-thumb--clickable hidden"
+                 onclick="openSmViewLightbox(this.src)" />
+            <div id="smb-img-placeholder" class="table-thumb-placeholder">
+              <svg class="icon"><use href="/admin/icons/sprite.svg#set-menus"></use></svg>
+            </div>
+            <div class="category-breadcrumbs smb-header__cats" id="smb-cats"></div>
+            <button class="btn btn--pill link--slide" onclick="openAddCourseToSmModal()">+ Course</button>
+            <button class="btn btn--pill link--slide" onclick="openSmAddItemModal(null)">+ Item</button>
+          </div>
+        </div>
+
+        <!-- Scrollable body -->
+        <div class="smb-body" id="smb-body">
+          <!-- Course sections rendered by JS -->
+          <div id="smb-courses"></div>
+
+          <!-- Uncategorised dishes section -->
+          <div id="smb-uncat"></div>
+
+        </div>
+
+      </div>
+    </div>
+
+    </div><!-- /.smb-split -->
+  </div><!-- /.smb-card -->
+  </main><!-- /.page-body -->
+</div><!-- /.main -->
+
+
+<%- include('./partials/modals/view/set-menu', { langs, primary }) %>
+<%- include('./partials/modals/create-edit/course', { langs }) %>
+<%- include('./partials/modals/create-edit/set-menu', { langs, primary, categories }) %>
+<%- include('./partials/modals/create-edit/note', { langs }) %>
+<%- include('./partials/modals/add/add-course', { langs }) %>
+<%- include('./partials/modals/add/add-item', { langs, primary, dishes }) %>
+<%- include('./partials/modals/create-edit/menu-item', { langs, primary, categories, allergens, dietaryTags, catName, tagName }) %>
+
+<%- include('./partials/scripts') %>
+<script src="/admin/js/sortable.min.js"></script>
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+let SM_DATA    = <%- JSON.stringify(setMenus) %>;
+let COURSES    = <%- JSON.stringify(courses) %>;
+const LANGS    = <%- JSON.stringify(langs) %>;
+const PRIMARY  = '<%= primary %>';
+const ALL_DISHES = <%- JSON.stringify(dishes) %>;
+const ALL_CATS   = <%- JSON.stringify(categories) %>;
+
+let activeSmId = null;
+let _sortables = [];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function getName(translations) {
+  if (!translations || !translations.length) return '—';
+  const t = translations.find(t => t.lang === PRIMARY) || translations[0];
+  return t ? (t.name || '—') : '—';
+}
+function getNote(translations) {
+  if (!translations || !translations.length) return '';
+  const t = translations.find(t => t.lang === PRIMARY) || translations[0];
+  return t ? (t.notes || '') : '';
+}
+// ── Mobile tab switching ──────────────────────────────────────────────────────
+function showListTab() {
+  document.getElementById('smb-split').classList.remove('smb-split--detail');
+  document.getElementById('smb-tab-list').classList.add('smb-tabs__btn--active');
+  document.getElementById('smb-tab-detail').classList.remove('smb-tabs__btn--active');
+}
+
+function showDetailTab() {
+  document.getElementById('smb-split').classList.add('smb-split--detail');
+  document.getElementById('smb-tab-detail').classList.add('smb-tabs__btn--active');
+  document.getElementById('smb-tab-list').classList.remove('smb-tabs__btn--active');
+}
+
+// ── Panel selection ───────────────────────────────────────────────────────────
+function selectSetMenu(id) {
+  activeSmId = id;
+  sessionStorage.setItem('smb-active', id);
+  document.querySelectorAll('.smb-item').forEach(el =>
+    el.classList.toggle('smb-item--active', parseInt(el.dataset.smId) === id)
+  );
+  const sm = SM_DATA.find(s => s.id === id);
+  if (sm) renderBuilder(sm);
+  showDetailTab();
+}
+
+// ── Refresh from API ──────────────────────────────────────────────────────────
+async function refreshAndRender(smId) {
+  try {
+    const res  = await fetch(`/api/set-menus/${smId}`);
+    const { data } = await res.json();
+    const idx = SM_DATA.findIndex(s => s.id === smId);
+    if (idx !== -1) SM_DATA[idx] = data.setMenu;
+    else SM_DATA.push(data.setMenu);
+    renderBuilder(data.setMenu);
+    updatePanelItem(data.setMenu);
+  } catch (e) { showToast('Error refreshing', 'error'); }
+}
+
+function updatePanelItem(sm) {
+  const el = document.querySelector(`.smb-item[data-sm-id="${sm.id}"]`);
+  if (!el) return;
+  el.querySelector('.smb-item__name').textContent = getName(sm.translations);
+  el.querySelector('.smb-item__price').textContent = `€${Number(sm.price).toFixed(2)}`;
+  const dot = el.querySelector('.smb-avail');
+  dot.className = `smb-avail smb-avail--${sm.is_available ? 'on' : 'off'}`;
+}
+
+// ── Builder render ────────────────────────────────────────────────────────────
+function renderBuilder(sm) {
+  document.getElementById('smb-empty').classList.add('hidden');
+  document.getElementById('smb-content').classList.remove('hidden');
+
+  // Header
+  document.getElementById('smb-name').textContent  = getName(sm.translations);
+  document.getElementById('smb-price').textContent = `€${Number(sm.price).toFixed(2)}`;
+  const chk = document.getElementById('smb-avail-chk');
+  chk.checked = sm.is_available;
+  const lbl = document.getElementById('smb-avail-label');
+  lbl.textContent  = sm.is_available ? 'Live' : 'Off';
+  lbl.className    = `smb-avail-label smb-avail-label--${sm.is_available ? 'on' : 'off'}`;
+
+  // Image
+  const smImg         = document.getElementById('smb-img');
+  const smPlaceholder = document.getElementById('smb-img-placeholder');
+  if (sm.image_url) {
+    smImg.src = sm.image_url;
+    smImg.classList.remove('hidden');
+    smPlaceholder.classList.add('hidden');
+  } else {
+    smImg.src = '';
+    smImg.classList.add('hidden');
+    smPlaceholder.classList.remove('hidden');
+  }
+
+  // Category breadcrumbs
+  const catsEl = document.getElementById('smb-cats');
+  catsEl.innerHTML = (sm.categories || []).map(c => {
+    const cat    = c.category;
+    const parent = ALL_CATS.find(p => p.id === cat.parent_id);
+    if (parent) {
+      return `<div class="breadcrumb-text"><span class="breadcrumb-muted">${esc(getName(parent.translations))}<span class="breadcrumb-sep"> › </span></span>${esc(getName(cat.translations))}</div>`;
+    }
+    return `<div class="breadcrumb-text">${esc(getName(cat.translations))}</div>`;
+  }).join('');
+
+  // Course sections
+  const coursesEl = document.getElementById('smb-courses');
+  coursesEl.innerHTML = (sm.courses || []).map(smc => renderCourseSection(smc, sm.id)).join('');
+
+  // Uncategorised dishes — only shown when there are no courses
+  const uncatEl = document.getElementById('smb-uncat');
+  const hasCourses = (sm.courses || []).length > 0;
+  uncatEl.innerHTML = hasCourses ? '' : renderUncatSection(sm.dishes || [], sm.id);
+
+  // Init sortables
+  initSortables(sm.id);
+}
+
+function renderCourseSection(smc, smId) {
+  const note    = getNote(smc.translations);
+  const noteBtn = note
+    ? `<button class="btn btn--pill link--slide btn--sm" onclick="openNoteModal('course', ${smc.id}, null)">Edit Note</button>`
+    : `<button class="btn btn--pill link--slide btn--sm" onclick="openNoteModal('course', ${smc.id}, null)">+ Note</button>`;
+
+  const dishes = (smc.dishes || []).map(d => renderDishRow(d, smId)).join('');
+
+  return `
+    <div class="smb-course" data-smc-id="${smc.id}">
+      <div class="smb-course__head">
+        <span class="bl-handle bl-handle--sm" title="Drag to reorder">&#8801;</span>
+        <div class="smb-course__meta">
+          <span class="smb-course__name">${esc(getName(smc.course.translations))}</span>
+        </div>
+        <div class="smb-course__actions">
+          <button onclick="openSmAddItemModal(${smc.id})" class="btn btn--pill link--slide btn--sm">+ Item</button>
+          ${noteBtn}
+          <button class="btn-view" title="View details">
+            <svg class="icon icon-closed"><use href="/admin/icons/sprite.svg#eye-closed"></use></svg>
+            <svg class="icon icon-open"><use href="/admin/icons/sprite.svg#eye-open"></use></svg>
+          </button>
+          <button class="btn-delete" onclick="removeCourse(${smId}, ${smc.id}, '${esc(getName(smc.course.translations))}')" title="Remove">
+            <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="smb-dish-list" data-sm-id="${smId}" data-smc-id="${smc.id}" id="dish-list-${smc.id}">
+        ${dishes}
+      </div>
+    </div>`;
+}
+
+function renderUncatSection(dishArr, smId) {
+  // No section header — uncategorised dishes appear as plain rows
+  const dishes = dishArr.map(d => renderDishRow(d, smId)).join('');
+  return `<div class="smb-dish-list" data-sm-id="${smId}" data-smc-id="none" id="dish-list-none">${dishes}</div>`;
+}
+
+function renderDishRow(smd, smId) {
+  const note    = getNote(smd.translations);
+  const noteBtn = note
+    ? `<button class="btn btn--pill link--slide btn--sm" onclick="openNoteModal('dish', ${smd.id}, null)">Edit Note</button>`
+    : `<button class="btn btn--pill link--slide btn--sm" onclick="openNoteModal('dish', ${smd.id}, null)">+ Note</button>`;
+
+  return `
+    <div class="smb-dish" data-entry-id="${smd.id}">
+      <span class="bl-handle bl-handle--dish" title="Drag to move">&#8801;</span>
+      <div class="smb-dish__info">
+        <span class="smb-dish__name">${esc(getName(smd.dish.translations))}</span>
+      </div>
+      ${noteBtn}
+      <button class="btn-view" title="View details">
+        <svg class="icon icon-closed"><use href="/admin/icons/sprite.svg#eye-closed"></use></svg>
+        <svg class="icon icon-open"><use href="/admin/icons/sprite.svg#eye-open"></use></svg>
+      </button>
+      <button class="btn-delete" onclick="removeDish(${smId}, ${smd.id})" title="Remove">
+        <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </button>
+    </div>`;
+}
+
+// ── Sortable ──────────────────────────────────────────────────────────────────
+const SCROLL_OPTS = { scroll: true, scrollSensitivity: 60, scrollSpeed: 10 };
+
+Sortable.create(document.getElementById('smb-list'), {
+  ...SCROLL_OPTS,
+  handle:     '.smb-item__handle',
+  animation:  180,
+  ghostClass: 'bl-ghost',
+  dragClass:  'bl-dragging',
+  onEnd() {
+    const items = [...document.querySelectorAll('#smb-list > .smb-item')].map((el, i) => ({
+      id:            parseInt(el.dataset.smId),
+      display_order: i,
+    }));
+    api('PATCH', '/api/set-menus/reorder', { items })
+      .catch(err => showToast(err.message, 'error'));
+  },
+});
+
+function initSortables(smId) {
+  _sortables.forEach(s => { try { s.destroy(); } catch(e) {} });
+  _sortables = [];
+
+  const coursesEl = document.getElementById('smb-courses');
+  if (coursesEl) {
+    _sortables.push(Sortable.create(coursesEl, {
+      ...SCROLL_OPTS,
+      draggable:  '.smb-course',
+      handle:     '.bl-handle--sm',
+      animation:  180,
+      ghostClass: 'bl-ghost',
+      dragClass:  'bl-dragging',
+      onMove(evt) {
+        // Prevent dropping inside another course's dish list
+        return evt.to === coursesEl;
+      },
+      onEnd() {
+        const items = [...coursesEl.querySelectorAll(':scope > .smb-course')].map((el, i) => ({
+          id:            parseInt(el.dataset.smcId),
+          display_order: i,
+        }));
+        api('PATCH', `/api/set-menus/${smId}/courses/reorder`, { items })
+          .catch(err => showToast(err.message, 'error'));
+      },
+    }));
+  }
+
+  document.querySelectorAll('.smb-dish-list').forEach(listEl => {
+    _sortables.push(Sortable.create(listEl, {
+      ...SCROLL_OPTS,
+      group:      { name: `dishes-${smId}`, pull: true, put: true },
+      handle:     '.bl-handle--dish',
+      animation:  180,
+      ghostClass: 'bl-ghost',
+      dragClass:  'bl-dragging',
+      onEnd(evt) {
+        const fromId  = evt.from.dataset.smcId;
+        const toId    = evt.to.dataset.smcId;
+        const entryId = parseInt(evt.item.dataset.entryId);
+
+        if (fromId !== toId) {
+          const newSmcId = (toId === 'none') ? null : parseInt(toId);
+          api('PUT', `/api/set-menus/${smId}/dishes/${entryId}`, {
+            set_menu_course_id: newSmcId,
+          })
+          .then(() => reorderDishList(evt.to, smId))
+          .catch(err => { showToast(err.message, 'error'); refreshAndRender(smId); });
+        } else {
+          reorderDishList(evt.to, smId);
+        }
+      },
+    }));
+  });
+}
+
+function reorderDishList(listEl, smId) {
+  const items = [...listEl.querySelectorAll(':scope > .smb-dish')].map((el, i) => ({
+    id:            parseInt(el.dataset.entryId),
+    display_order: i,
+  }));
+  if (!items.length) return;
+  api('PATCH', `/api/set-menus/${smId}/dishes/reorder`, { items })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// ── Availability toggle ───────────────────────────────────────────────────────
+async function toggleAvailability() {
+  if (!activeSmId) return;
+  const chk = document.getElementById('smb-avail-chk');
+  try {
+    await api('PUT', `/api/set-menus/${activeSmId}`, { is_available: chk.checked });
+    const lbl = document.getElementById('smb-avail-label');
+    lbl.textContent = chk.checked ? 'Live' : 'Off';
+    lbl.className   = `smb-avail-label smb-avail-label--${chk.checked ? 'on' : 'off'}`;
+    const sm = SM_DATA.find(s => s.id === activeSmId);
+    if (sm) { sm.is_available = chk.checked; updatePanelItem(sm); }
+    showToast(chk.checked ? 'Set menu is now live' : 'Set menu hidden');
+  } catch (err) {
+    chk.checked = !chk.checked; // revert
+    showToast(err.message, 'error');
+  }
+}
+
+// ── Add item ──────────────────────────────────────────────────────────────────
+function openSmAddItemModal(smcId) {
+  if (!activeSmId) return;
+  const sm        = SM_DATA.find(s => s.id === activeSmId);
+  const hasCourses = (sm?.courses || []).length > 0;
+  openAddItemModal({
+    showNotes: true,
+    smcId:     (smcId !== null && smcId !== undefined) ? smcId : undefined,
+    courses:   (!smcId && hasCourses) ? sm.courses : null,
+    onSubmit:  async (dishId, { smcId, notes }) => {
+      const body = { dish_id: dishId, set_menu_course_id: smcId, ...notes };
+      await api('POST', `/api/set-menus/${activeSmId}/dishes`, body);
+      showToast('Item added');
+      await refreshAndRender(activeSmId);
+    },
+  });
+}
+
+async function removeDish(smId, entryId) {
+  try {
+    await api('DELETE', `/api/set-menus/${smId}/dishes/${entryId}`);
+    showToast('Item removed');
+    await refreshAndRender(smId);
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ── Course management ─────────────────────────────────────────────────────────
+async function addCourseToSm(courseId, notes) {
+  if (!activeSmId) return;
+  try {
+    const sm = SM_DATA.find(s => s.id === activeSmId);
+    const isFirstCourse = (sm?.courses || []).length === 0;
+    const uncatItems    = sm?.dishes || [];
+
+    const { data } = await api('POST', `/api/set-menus/${activeSmId}/courses`, { course_id: courseId });
+    const newSmcId = data.setMenuCourse.id;
+
+    if (notes && Object.keys(notes).length) {
+      await api('PATCH', `/api/set-menus/${activeSmId}/courses/${newSmcId}`, notes);
+    }
+
+    // Auto-migrate uncategorised items into the first course added
+    if (isFirstCourse && uncatItems.length > 0) {
+      await Promise.all(uncatItems.map(d =>
+        api('PUT', `/api/set-menus/${activeSmId}/dishes/${d.id}`, { set_menu_course_id: newSmcId })
+      ));
+      showToast(`Course added — ${uncatItems.length} item${uncatItems.length !== 1 ? 's' : ''} moved to this course`);
+    } else {
+      showToast('Course added');
+    }
+
+    await refreshAndRender(activeSmId);
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function removeCourse(smId, smcId, name) {
+  confirmDelete(`Remove "${name}" from this set menu? Items in this course will become uncategorised.`, async () => {
+    try {
+      await api('DELETE', `/api/set-menus/${smId}/courses/${smcId}`);
+      showToast('Course removed');
+      await refreshAndRender(smId);
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+}
+
+// ── Course library management ─────────────────────────────────────────────────
+function toggleLibrary() {
+  const lib  = document.getElementById('smb-library');
+  const body = document.getElementById('smb-library-body');
+  const open = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  lib.classList.toggle('smb-library--open', !open);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  const lastId = parseInt(sessionStorage.getItem('smb-active'));
+  if (lastId && SM_DATA.find(s => s.id === lastId)) {
+    selectSetMenu(lastId);
+  } else if (SM_DATA.length > 0) {
+    selectSetMenu(SM_DATA[0].id);
+  }
+})();
+</script>
+
+</body>
+</html>

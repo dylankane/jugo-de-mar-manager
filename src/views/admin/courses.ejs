@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="<%= uiLang %>">
+<%- include('../partials/head', { title: t('page.courses.title'), restaurantName, section: 'admin' }) %>
+<body>
+
+<%- include('./partials/sidebar', { current, user, restaurantName }) %>
+
+<%
+  const langs   = settings.enabled_languages || ['en', 'es'];
+
+  function courseName(course) {
+    const tr_ = (course.translations || []).find(t_ => t_.lang === uiLang)
+             || (course.translations || []).find(t_ => t_.lang === 'en')
+             || (course.translations || [])[0];
+    return tr_ ? (tr_.name || '—') : '—';
+  }
+%>
+
+<div class="main">
+  <header class="page-header">
+    <h2 class="page-header__title"><%= t('page.courses.title') %></h2>
+    <%- include('./partials/lang-selector') %>
+    <button onclick="openModal('addCourseModal')" class="btn btn--primary"><%= t('page.courses.btn_add') %></button>
+  </header>
+
+  <main class="page-body">
+    <p class="page-intro"><%= t('page.courses.intro') %></p>
+
+    <% if (courses.length === 0) { %>
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state__icon">🍽️</div>
+          <p class="empty-state__text"><%= t('page.courses.empty_no_courses') %></p>
+          <button onclick="openModal('addCourseModal')" class="empty-state__action"><%= t('page.courses.empty_action') %></button>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="card">
+        <% courses.forEach(c => { %>
+          <div class="tag-row">
+            <div class="tag-row__info">
+              <span class="tag-row__name"><%= courseName(c) %></span>
+              <% if (c.translations.length > 1) { %>
+                <span class="tag-row__system">(<%= c.translations.map(t_=>t_.lang).join(', ') %>)</span>
+              <% } %>
+              <span class="tag-row__system">#<%= c.display_order %></span>
+            </div>
+            <div class="tag-row__actions">
+              <button onclick='openEditCourseModal(<%- JSON.stringify(c) %>)' class="btn btn--outline-primary btn--xs"><%= t('common.edit') %></button>
+              <button onclick="deleteCourse(<%= c.id %>, '<%= courseName(c).replace(/'/g, "\\'") %>')" class="btn btn--outline-danger btn--xs"><%= t('common.delete') %></button>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </main>
+</div>
+
+<!-- ── Add Course Modal ───────────────────────────────────────────────────── -->
+<div id="addCourseModal" class="modal-overlay hidden">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.courses.modal_add_title') %></h3>
+      <button onclick="closeModal('addCourseModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body" data-lang-container>
+      <div class="lang-tabs">
+        <% langs.forEach((lang, i) => { %>
+          <button type="button" class="lang-tab <%= i === 0 ? 'lang-tab--active' : '' %>"
+            data-lang="<%= lang %>" onclick="switchLangTab(this, '<%= lang %>')">
+            <%= lang.toUpperCase() %>
+          </button>
+        <% }) %>
+      </div>
+      <% langs.forEach((lang, i) => { %>
+        <div class="lang-panel <%= i === 0 ? 'lang-panel--active' : '' %>" data-lang="<%= lang %>">
+          <div class="form-group">
+            <label class="form-label"><%= t('modal.label_name').replace('{lang}', lang.toUpperCase()) %></label>
+            <input type="text" id="addCourseName_<%= lang %>" class="form-input" />
+          </div>
+        </div>
+      <% }) %>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.courses.display_order') %></label>
+        <input type="number" id="addCourseOrder" class="form-input" value="0" min="0" />
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button type="button" onclick="closeModal('addCourseModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button type="button" onclick="submitAddCourse()" class="btn btn--primary"><%= t('page.courses.btn_save') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Course Modal ──────────────────────────────────────────────────── -->
+<div id="editCourseModal" class="modal-overlay hidden">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.courses.modal_edit_title') %></h3>
+      <button onclick="closeModal('editCourseModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body" data-lang-container>
+      <input type="hidden" id="editCourseId" />
+      <div class="lang-tabs">
+        <% langs.forEach((lang, i) => { %>
+          <button type="button" class="lang-tab <%= i === 0 ? 'lang-tab--active' : '' %>"
+            data-lang="<%= lang %>" onclick="switchLangTab(this, '<%= lang %>')">
+            <%= lang.toUpperCase() %>
+          </button>
+        <% }) %>
+      </div>
+      <% langs.forEach((lang, i) => { %>
+        <div class="lang-panel <%= i === 0 ? 'lang-panel--active' : '' %>" data-lang="<%= lang %>">
+          <div class="form-group">
+            <label class="form-label"><%= t('modal.label_name').replace('{lang}', lang.toUpperCase()) %></label>
+            <input type="text" id="editCourseName_<%= lang %>" class="form-input" />
+          </div>
+        </div>
+      <% }) %>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.courses.display_order') %></label>
+        <input type="number" id="editCourseOrder" class="form-input" min="0" />
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button type="button" onclick="closeModal('editCourseModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button type="button" onclick="submitEditCourse()" class="btn btn--primary"><%= t('page.courses.btn_save_changes') %></button>
+    </div>
+  </div>
+</div>
+
+<%- include('./partials/scripts') %>
+<script>
+  const LANGS   = <%- JSON.stringify(langs) %>;
+  const PRIMARY = '<%= primary %>';
+
+  function openEditCourseModal(c) {
+    document.getElementById('editCourseId').value    = c.id;
+    document.getElementById('editCourseOrder').value = c.display_order;
+    const byLang = {};
+    (c.translations || []).forEach(t => byLang[t.lang] = t);
+    LANGS.forEach(lang => {
+      const el = document.getElementById(`editCourseName_${lang}`);
+      if (el) el.value = (byLang[lang] || {}).name || '';
+    });
+    const container = document.querySelector('#editCourseModal [data-lang-container]');
+    resetLangTabs(container, PRIMARY);
+    openModal('editCourseModal');
+  }
+
+  async function submitAddCourse() {
+    const body = { display_order: parseInt(document.getElementById('addCourseOrder').value) || 0 };
+    LANGS.forEach(lang => {
+      const val = document.getElementById(`addCourseName_${lang}`)?.value.trim();
+      if (val) body[`name_${lang}`] = val;
+    });
+    try {
+      await api('POST', '/api/courses', body);
+      showToast(tr('course_added'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function submitEditCourse() {
+    const id   = document.getElementById('editCourseId').value;
+    const body = { display_order: parseInt(document.getElementById('editCourseOrder').value) || 0 };
+    LANGS.forEach(lang => {
+      const val = document.getElementById(`editCourseName_${lang}`)?.value.trim();
+      if (val) body[`name_${lang}`] = val;
+    });
+    try {
+      await api('PUT', `/api/courses/${id}`, body);
+      showToast(tr('course_updated'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function deleteCourse(id, name) {
+    confirmDelete(`${(UI_TRANS.modal && UI_TRANS.modal.confirm_delete_named || 'Delete "{name}"?').replace('{name}', name)}`, async () => {
+      try {
+        await api('DELETE', `/api/courses/${id}`);
+        showToast(tr('course_deleted'));
+        reloadAfter();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
+</script>
+
+</body>
+</html>

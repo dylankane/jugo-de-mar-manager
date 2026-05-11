@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="<%= uiLang %>">
+<%- include('../partials/head', { title: t('page.restaurant.title'), restaurantName, section: 'admin' }) %>
+<body>
+
+<%- include('./partials/sidebar', { current, user, restaurantName }) %>
+
+<%
+  const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const hoursMap = Object.fromEntries(openingHours.map(h => [h.day, h]));
+
+  function formatSlots(h) {
+    if (!h || h.is_closed) return t('common.closed');
+    const s1 = (h.slot_1_from && h.slot_1_to) ? `${h.slot_1_from} – ${h.slot_1_to}` : '';
+    const s2 = (h.slot_2_active && h.slot_2_from && h.slot_2_to) ? `${h.slot_2_from} – ${h.slot_2_to}` : '';
+    if (s1 && s2) return `${s1} · ${s2}`;
+    return s1 || '—';
+  }
+
+  function fmtOverrideDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  const SOCIALS = [
+    { key: 'instagram_url',   label: 'Instagram'   },
+    { key: 'facebook_url',    label: 'Facebook'    },
+    { key: 'tripadvisor_url', label: 'TripAdvisor' },
+    { key: 'google_url',      label: 'Google'      },
+    { key: 'twitter_url',     label: 'Twitter / X' },
+    { key: 'linkedin_url',    label: 'LinkedIn'    },
+    { key: 'youtube_url',     label: 'YouTube'     },
+  ];
+
+  const hasContactInfo = contact && (contact.phone || contact.whatsapp || contact.email_general || contact.email_reservations || contact.address || contact.map_url);
+  const hasSocials     = contact && SOCIALS.some(s => contact[s.key]);
+  const hasAnnContent  = announcement && (announcement.title || announcement.body);
+%>
+
+<div class="main">
+  <header class="page-header page-header--minimal">
+    <h2 class="page-header__title"><%= t('page.restaurant.title') %></h2>
+    <%- include('./partials/lang-selector') %>
+  </header>
+
+  <main class="page-body page-body--minimal">
+  <div class="restaurant-grid">
+
+    <!-- ── IDENTITY ─────────────────────────────────────────────────────────── -->
+    <div class="card table-card">
+      <div class="card__header card__header--brand">
+        <h3 class="card__title"><%= t('page.restaurant.card_identity') %></h3>
+        <button onclick="openEditIdentityModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.restaurant.btn_edit') %></button>
+      </div>
+      <div class="info-grid card__body">
+        <span class="info-grid__label"><%= t('page.restaurant.label_name') %></span>
+        <span class="info-grid__value"><%= settings.restaurant_name || '—' %></span>
+        <span class="info-grid__label"><%= t('page.restaurant.label_logo_svg') %></span>
+        <span class="info-grid__value">
+          <% if (settings.logo_svg_url) { %>
+            <img src="<%= settings.logo_svg_url %>" alt="Logo SVG" class="table-thumb" />
+          <% } else { %>
+            <span class="text-muted"><%= t('common.no_logo') %></span>
+          <% } %>
+        </span>
+        <span class="info-grid__label"><%= t('page.restaurant.label_logo_light') %></span>
+        <span class="info-grid__value">
+          <% if (settings.logo_light_url) { %>
+            <img src="<%= settings.logo_light_url %>" alt="Logo Light" class="table-thumb" />
+          <% } else { %>
+            <span class="text-muted"><%= t('common.no_logo') %></span>
+          <% } %>
+        </span>
+        <span class="info-grid__label"><%= t('page.restaurant.label_logo_dark') %></span>
+        <span class="info-grid__value">
+          <% if (settings.logo_dark_url) { %>
+            <img src="<%= settings.logo_dark_url %>" alt="Logo Dark" class="table-thumb" />
+          <% } else { %>
+            <span class="text-muted"><%= t('common.no_logo') %></span>
+          <% } %>
+        </span>
+      </div>
+    </div>
+
+    <!-- ── CONTACT & INFO ─────────────────────────────────────────────────── -->
+    <div class="card table-card">
+      <div class="card__header card__header--brand">
+        <h3 class="card__title"><%= t('page.restaurant.card_contact_info') %></h3>
+        <button onclick="openEditContactModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.restaurant.btn_edit') %></button>
+      </div>
+
+      <% if (!hasContactInfo && !hasSocials) { %>
+        <div class="empty-state">
+          <p class="empty-state__text"><%= t('page.restaurant.empty_no_contact') %></p>
+          <button onclick="openEditContactModal()" class="btn btn--pill btn--outline-brand btn--sm"><%= t('page.restaurant.btn_add_contact_info') %></button>
+        </div>
+      <% } else { %>
+        <% if (hasContactInfo) { %>
+          <div class="info-grid card__body">
+            <% if (contact.phone) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_phone') %></span>
+              <span class="info-grid__value"><%= contact.phone %></span>
+            <% } %>
+            <% if (contact.whatsapp) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_whatsapp') %></span>
+              <span class="info-grid__value"><%= contact.whatsapp %></span>
+            <% } %>
+            <% if (contact.email_general) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_email_general') %></span>
+              <span class="info-grid__value"><%= contact.email_general %></span>
+            <% } %>
+            <% if (contact.email_reservations) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_reservations') %></span>
+              <span class="info-grid__value"><%= contact.email_reservations %></span>
+            <% } %>
+            <% if (contact.address) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_address') %></span>
+              <span class="info-grid__value"><%= contact.address %></span>
+            <% } %>
+            <% if (contact.map_url) { %>
+              <span class="info-grid__label"><%= t('page.restaurant.label_map_url') %></span>
+              <span class="info-grid__value"><%= t('page.restaurant.map_embed_set') %></span>
+            <% } %>
+          </div>
+        <% } %>
+        <% if (hasSocials) { %>
+          <div class="card__section">
+            <p class="card__section-title"><%= t('page.restaurant.social_links') %></p>
+            <div class="info-grid">
+              <% SOCIALS.forEach(s => { %>
+                <% if (contact[s.key]) { %>
+                  <span class="info-grid__label"><%= s.label %></span>
+                  <span class="info-grid__value"><a href="<%= contact[s.key] %>" target="_blank"><%= contact[s.key] %></a></span>
+                <% } %>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+
+    <!-- ── OPENING HOURS ──────────────────────────────────────────────────── -->
+    <div class="card table-card">
+      <div class="card__header card__header--brand">
+        <h3 class="card__title"><%= t('page.restaurant.card_hours') %></h3>
+        <button onclick="openEditHoursModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.restaurant.btn_edit') %></button>
+      </div>
+
+      <div class="hours-list">
+        <% DAYS.forEach(day => {
+          const h = hoursMap[day];
+        %>
+          <div class="hours-row <%= (h && h.is_closed) ? 'hours-row--closed' : '' %>">
+            <span class="hours-row__day"><%= day %></span>
+            <span class="hours-row__times"><%= formatSlots(h) %></span>
+            <% if (h && h.note) { %><span class="hours-row__note"><%= h.note %></span><% } %>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="overrides-section">
+        <div class="overrides-header">
+          <span class="overrides-title"><%= t('page.restaurant.overrides_title') %></span>
+          <button onclick="openAddOverrideModal()" class="btn btn--pill btn--outline-brand btn--sm"><%= t('page.restaurant.btn_add_override') %></button>
+        </div>
+        <% if (overrides.length === 0) { %>
+          <p class="hours-row__note"><%= t('page.restaurant.override_regular') %></p>
+        <% } else { %>
+          <% overrides.forEach(o => { %>
+            <div class="override-row">
+              <span class="override-row__date"><%= fmtOverrideDate(o.date) %></span>
+              <span class="override-row__info"><%= formatSlots(o) %><%= o.note ? ` · ${o.note}` : '' %></span>
+              <button class="btn-delete" onclick="deleteOverride(<%= o.id %>)" title="Remove override">
+                <svg class="icon icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+              </button>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- ── ANNOUNCEMENT ───────────────────────────────────────────────────── -->
+    <div class="card table-card">
+      <div class="card__header card__header--brand">
+        <h3 class="card__title"><%= t('page.restaurant.card_announcement') %></h3>
+        <button onclick="openEditAnnouncementModal()" class="btn btn--pill btn--outline-accent-on-dark btn--sm"><%= t('page.restaurant.btn_edit') %></button>
+      </div>
+
+      <% if (!hasAnnContent) { %>
+        <div class="empty-state">
+          <p class="empty-state__text"><%= t('page.restaurant.empty_no_announcement') %></p>
+          <button onclick="openEditAnnouncementModal()" class="btn btn--pill btn--outline-brand btn--sm"><%= t('page.restaurant.btn_create_announcement') %></button>
+        </div>
+      <% } else { %>
+        <div class="ann-toggle-row">
+          <label class="smb-avail-switch" title="Toggle live">
+            <input type="checkbox" id="annActiveToggle"
+                   <%= announcement.is_active ? 'checked' : '' %>
+                   onchange="toggleAnnouncement(this.checked)">
+            <span class="smb-avail-label smb-avail-label--<%= announcement.is_active ? 'on' : 'off' %>" id="annActiveLabel">
+              <%= announcement.is_active ? t('page.restaurant.announcement_live') : t('page.restaurant.announcement_off') %>
+            </span>
+          </label>
+        </div>
+        <div class="ann-preview card__body">
+          <% if (announcement.image_url) { %>
+            <img src="<%= announcement.image_url %>" alt="" class="ann-preview__image" />
+          <% } %>
+          <div class="ann-preview__text">
+            <p class="ann-preview__title"><%= announcement.title || '—' %></p>
+            <% if (announcement.body) { %>
+              <p class="ann-preview__body"><%= announcement.body %></p>
+            <% } %>
+            <% if (announcement.cta_active && announcement.cta_label) { %>
+              <span class="ann-preview__cta"><%= announcement.cta_label %> →</span>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+  </div><!-- /.restaurant-grid -->
+  </main>
+</div>
+
+
+<!-- ── EDIT IDENTITY MODAL ───────────────────────────────────────────────── -->
+<div id="editIdentityModal" class="modal-overlay hidden">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.restaurant.modal_identity_title') %></h3>
+      <button onclick="closeModal('editIdentityModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_name') %></label>
+        <input type="text" id="idName" value="<%= settings.restaurant_name || '' %>" class="form-input" />
+      </div>
+      <div class="image-upload-row">
+        <div class="image-upload-input">
+          <label class="form-label"><%= t('page.restaurant.label_logo_svg') %> <span class="form-hint"><%= t('page.restaurant.modal_identity_hint_svg') %></span></label>
+          <input type="file" id="idLogoSvg" accept=".svg,image/svg+xml" class="form-file" />
+        </div>
+        <div id="idLogoSvgPreview" class="image-preview <%= settings.logo_svg_url ? '' : 'hidden' %>">
+          <img id="idLogoSvgThumb" src="<%= settings.logo_svg_url || '' %>" alt="" class="table-thumb" />
+          <span class="image-preview__label"><%= t('page.restaurant.modal_identity_logo_replace') %></span>
+          <button type="button" class="image-preview__clear" onclick="clearLogoField('idLogoSvg','idLogoSvgThumb','idLogoSvgPreview')" aria-label="Remove">&times;</button>
+        </div>
+      </div>
+      <div class="logo-upload-divider">
+        <span><%= t('page.restaurant.modal_identity_logo_or') %></span>
+      </div>
+      <div class="image-upload-row">
+        <div class="image-upload-input">
+          <label class="form-label"><%= t('page.restaurant.label_logo_light') %> <span class="form-hint"><%= t('page.restaurant.modal_identity_hint_light') %></span></label>
+          <input type="file" id="idLogoLight" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-file" />
+        </div>
+        <div id="idLogoLightPreview" class="image-preview <%= settings.logo_light_url ? '' : 'hidden' %>">
+          <img id="idLogoLightThumb" src="<%= settings.logo_light_url || '' %>" alt="" class="table-thumb" />
+          <span class="image-preview__label"><%= t('page.restaurant.modal_identity_logo_replace') %></span>
+          <button type="button" class="image-preview__clear" onclick="clearLogoField('idLogoLight','idLogoLightThumb','idLogoLightPreview')" aria-label="Remove">&times;</button>
+        </div>
+      </div>
+      <div class="image-upload-row">
+        <div class="image-upload-input">
+          <label class="form-label"><%= t('page.restaurant.label_logo_dark') %> <span class="form-hint"><%= t('page.restaurant.modal_identity_hint_dark') %></span></label>
+          <input type="file" id="idLogoDark" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-file" />
+        </div>
+        <div id="idLogoDarkPreview" class="image-preview <%= settings.logo_dark_url ? '' : 'hidden' %>">
+          <img id="idLogoDarkThumb" src="<%= settings.logo_dark_url || '' %>" alt="" class="table-thumb" />
+          <span class="image-preview__label"><%= t('page.restaurant.modal_identity_logo_replace') %></span>
+          <button type="button" class="image-preview__clear" onclick="clearLogoField('idLogoDark','idLogoDarkThumb','idLogoDarkPreview')" aria-label="Remove">&times;</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button onclick="closeModal('editIdentityModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button onclick="submitIdentity()" class="btn btn--primary"><%= t('modal.btn_save') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT OPENING HOURS MODAL ───────────────────────────────────────────── -->
+<div id="editHoursModal" class="modal-overlay hidden">
+  <div class="modal modal--lg" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.restaurant.modal_hours_title') %></h3>
+      <button onclick="closeModal('editHoursModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <div class="hours-form">
+        <% DAYS.forEach((day, idx) => {
+          const h = hoursMap[day] || {};
+        %>
+          <div class="hours-form__row">
+            <div class="hours-form__day"><%= day %></div>
+            <div class="hours-form__controls">
+              <label class="smb-avail-switch smb-avail-switch--closed">
+                <input type="checkbox" id="hclosed_<%= day %>"
+                       <%= h.is_closed ? 'checked' : '' %>
+                       onchange="toggleDayClosed('<%= day %>', this.checked)" />
+                <span class="smb-avail-label"><%= t('page.restaurant.label_closed') %></span>
+              </label>
+              <div id="hslots_<%= day %>" class="hours-form__slots<%= h.is_closed ? ' hidden' : '' %>">
+                <div class="hours-time-group">
+                  <input type="text" inputmode="numeric" autocomplete="off"
+                         id="hs1from_<%= day %>" value="<%= h.slot_1_from || '' %>"
+                         placeholder="--:--" class="form-input time-input" />
+                  <span class="hours-sep">–</span>
+                  <input type="text" inputmode="numeric" autocomplete="off"
+                         id="hs1to_<%= day %>" value="<%= h.slot_1_to || '' %>"
+                         placeholder="--:--" class="form-input time-input" />
+                </div>
+                <label class="smb-avail-switch smb-avail-switch--slot2">
+                  <input type="checkbox" id="hs2active_<%= day %>"
+                         <%= h.slot_2_active ? 'checked' : '' %>
+                         onchange="toggleSlot2('<%= day %>', this.checked)" />
+                  <span class="smb-avail-label"><%= t('page.restaurant.modal_hours_second_slot') %></span>
+                </label>
+                <div id="hslot2_<%= day %>" class="hours-time-group<%= !h.slot_2_active ? ' hidden' : '' %>">
+                  <input type="text" inputmode="numeric" autocomplete="off"
+                         id="hs2from_<%= day %>" value="<%= h.slot_2_from || '' %>"
+                         placeholder="--:--" class="form-input time-input" />
+                  <span class="hours-sep">–</span>
+                  <input type="text" inputmode="numeric" autocomplete="off"
+                         id="hs2to_<%= day %>" value="<%= h.slot_2_to || '' %>"
+                         placeholder="--:--" class="form-input time-input" />
+                </div>
+              </div>
+              <input type="text" id="hnote_<%= day %>" value="<%= h.note || '' %>"
+                     class="form-input form-input--sm" placeholder="<%= t('page.restaurant.modal_hours_note_placeholder') %>" />
+              <div class="hours-form__copy-row">
+                <% if (idx < DAYS.length - 1) { %>
+                  <button type="button" class="link--slide btn--sm"
+                          onclick="copyToNextDay('<%= day %>')"><%= t('page.restaurant.modal_hours_copy_next') %></button>
+                <% } %>
+                <button type="button" class="link--slide btn--sm"
+                        onclick="applyDayToAll('<%= day %>')"><%= t('page.restaurant.modal_hours_copy_all') %></button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button onclick="closeModal('editHoursModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button onclick="submitHours()" class="btn btn--primary"><%= t('page.restaurant.modal_hours_btn_save') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD OVERRIDE MODAL ─────────────────────────────────────────────────── -->
+<div id="addOverrideModal" class="modal-overlay hidden">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.restaurant.modal_override_title') %></h3>
+      <button onclick="closeModal('addOverrideModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label"><%= t('common.date') %> <span class="required">*</span></label>
+        <input type="date" id="ovDate" class="form-input" />
+      </div>
+      <label class="form-check">
+        <input type="checkbox" id="ovClosed" checked onchange="toggleOverrideClosed(this.checked)" />
+        <span class="form-check__label"><%= t('page.restaurant.modal_override_closed_day') %></span>
+      </label>
+      <div id="ovSlots" class="hidden">
+        <div class="form-group">
+          <label class="form-label"><%= t('page.restaurant.modal_override_slot1') %></label>
+          <div class="hours-time-group">
+            <input type="time" id="ovS1from" class="form-input form-input--sm" />
+            <span class="hours-sep">–</span>
+            <input type="time" id="ovS1to" class="form-input form-input--sm" />
+          </div>
+        </div>
+        <label class="form-check">
+          <input type="checkbox" id="ovS2active" onchange="toggleOverrideSlot2(this.checked)" />
+          <span class="form-check__label"><%= t('page.restaurant.modal_override_slot2') %></span>
+        </label>
+        <div id="ovSlot2" class="hours-time-group hidden">
+          <input type="time" id="ovS2from" class="form-input form-input--sm" />
+          <span class="hours-sep">–</span>
+          <input type="time" id="ovS2to" class="form-input form-input--sm" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('common.note') %> <span class="hint">(optional)</span></label>
+        <input type="text" id="ovNote" class="form-input" placeholder="<%= t('page.restaurant.modal_override_note_placeholder') %>" />
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button onclick="closeModal('addOverrideModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button onclick="submitOverride()" class="btn btn--primary"><%= t('page.restaurant.modal_override_btn_add') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT CONTACT MODAL ─────────────────────────────────────────────────── -->
+<div id="editContactModal" class="modal-overlay hidden">
+  <div class="modal modal--lg" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.restaurant.modal_contact_title') %></h3>
+      <button onclick="closeModal('editContactModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_phone') %></label>
+        <input type="tel" id="cPhone" value="<%= contact.phone || '' %>" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_whatsapp') %> <span class="hint"><%= t('page.restaurant.modal_contact_whatsapp_hint') %></span></label>
+        <input type="tel" id="cWhatsapp" value="<%= contact.whatsapp || '' %>" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_email_general') %></label>
+        <input type="email" id="cEmailGeneral" value="<%= contact.email_general || '' %>" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_email_reservations') %></label>
+        <input type="email" id="cEmailRes" value="<%= contact.email_reservations || '' %>" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_address') %></label>
+        <input type="text" id="cAddress" value="<%= contact.address || '' %>" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_map_url') %> <span class="hint"><%= t('page.restaurant.modal_contact_map_hint') %></span></label>
+        <input type="text" id="cMapUrl" value="<%= contact.map_url || '' %>" class="form-input" placeholder="https://www.google.com/maps/embed?pb=... or paste full iframe" />
+      </div>
+
+      <hr />
+      <p class="card__section-title"><%= t('page.restaurant.modal_contact_socials_title') %></p>
+
+      <% SOCIALS.forEach(s => { %>
+        <div class="form-group">
+          <label class="form-label"><%= s.label %></label>
+          <input type="url" id="cSocial_<%= s.key %>" value="<%= contact[s.key] || '' %>" class="form-input" placeholder="https://…" />
+        </div>
+      <% }) %>
+    </div>
+    <div class="modal__footer">
+      <button onclick="closeModal('editContactModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button onclick="submitContact()" class="btn btn--primary"><%= t('modal.btn_save_changes') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT ANNOUNCEMENT MODAL ────────────────────────────────────────────── -->
+<div id="editAnnouncementModal" class="modal-overlay hidden">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal__header">
+      <h3 class="modal__title"><%= t('page.restaurant.modal_ann_title') %></h3>
+      <button onclick="closeModal('editAnnouncementModal')" class="modal__close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.label_name') %></label>
+        <input type="text" id="annTitle" value="<%= announcement.title || '' %>" class="form-input" data-capitalize="sentence" />
+      </div>
+      <div class="form-group">
+        <label class="form-label"><%= t('page.restaurant.modal_ann_label_body') %></label>
+        <textarea id="annBody" rows="3" class="form-textarea" data-capitalize="sentence"><%= announcement.body || '' %></textarea>
+      </div>
+      <div class="image-upload-row">
+        <div class="image-upload-input">
+          <label class="form-label"><%= t('page.restaurant.modal_ann_label_bg_image') %></label>
+          <input type="file" id="annImage" accept="image/*" class="form-file" />
+        </div>
+        <div id="annImagePreview" class="image-preview <%= announcement.image_url ? '' : 'hidden' %>">
+          <img id="annImageThumb" src="<%= announcement.image_url || '' %>" alt="" class="table-thumb" />
+          <span class="image-preview__label"><%= t('page.restaurant.modal_identity_logo_replace') %></span>
+          <button type="button" class="image-preview__clear" onclick="clearImagePreview('annImage','annImagePreview')" aria-label="Remove">&times;</button>
+        </div>
+      </div>
+      <hr />
+      <label class="form-check">
+        <input type="checkbox" id="annCtaActive"
+               <%= (announcement.cta_active) ? 'checked' : '' %>
+               onchange="toggleCtaFields(this.checked)" />
+        <span class="form-check__label"><%= t('page.restaurant.modal_ann_cta_toggle') %></span>
+      </label>
+      <div id="annCtaFields" class="form-stack <%= announcement.cta_active ? '' : 'hidden' %>">
+        <div class="form-group">
+          <label class="form-label"><%= t('page.restaurant.modal_ann_cta_label') %></label>
+          <input type="text" id="annCtaLabel" value="<%= announcement.cta_label || '' %>" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label"><%= t('page.restaurant.modal_ann_cta_url') %></label>
+          <input type="url" id="annCtaUrl" value="<%= announcement.cta_url || '' %>" class="form-input" placeholder="https://…" />
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button onclick="closeModal('editAnnouncementModal')" class="btn btn--secondary"><%= t('modal.btn_cancel') %></button>
+      <button onclick="submitAnnouncement()" class="btn btn--primary"><%= t('modal.btn_save') %></button>
+    </div>
+  </div>
+</div>
+
+<%- include('./partials/scripts') %>
+<script>
+  const DAYS = <%- JSON.stringify(['monday','tuesday','wednesday','thursday','friday','saturday','sunday']) %>;
+
+  // ── Identity ─────────────────────────────────────────────────────────────────
+  function openEditIdentityModal() { openModal('editIdentityModal'); }
+
+  function wireLogoPreview(inputId, thumbId, previewId) {
+    document.getElementById(inputId).addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      document.getElementById(thumbId).src = URL.createObjectURL(file);
+      document.getElementById(previewId).classList.remove('hidden');
+      document.getElementById(previewId).querySelector('.image-preview__label').textContent = 'New logo selected';
+    });
+  }
+  wireLogoPreview('idLogoSvg',   'idLogoSvgThumb',   'idLogoSvgPreview');
+  wireLogoPreview('idLogoLight', 'idLogoLightThumb', 'idLogoLightPreview');
+  wireLogoPreview('idLogoDark',  'idLogoDarkThumb',  'idLogoDarkPreview');
+
+  function clearLogoField(inputId, thumbId, previewId) {
+    const input = document.getElementById(inputId);
+    input.value = '';
+    document.getElementById(thumbId).src = '';
+    document.getElementById(previewId).classList.add('hidden');
+    document.getElementById(previewId).querySelector('.image-preview__label').textContent = 'Current logo — upload new to replace';
+  }
+
+  async function submitIdentity() {
+    const fd = new FormData();
+    fd.append('restaurant_name', document.getElementById('idName').value.trim());
+    const logoSvg   = document.getElementById('idLogoSvg').files[0];
+    const logoLight = document.getElementById('idLogoLight').files[0];
+    const logoDark  = document.getElementById('idLogoDark').files[0];
+    if (logoSvg)   fd.append('logo_svg',   logoSvg);
+    if (logoLight) fd.append('logo_light', logoLight);
+    if (logoDark)  fd.append('logo_dark',  logoDark);
+    try {
+      await api('PUT', '/api/settings', fd);
+      showToast(tr('identity_updated'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // ── Opening Hours ────────────────────────────────────────────────────────────
+  function openEditHoursModal() { openModal('editHoursModal'); }
+
+  function toggleDayClosed(day, closed) {
+    document.getElementById(`hslots_${day}`).classList.toggle('hidden', closed);
+  }
+
+  function toggleSlot2(day, active) {
+    document.getElementById(`hslot2_${day}`).classList.toggle('hidden', !active);
+  }
+
+  function parseTimeInput(raw) {
+    if (!raw) return null;
+    const s = raw.replace(/\D/g, '');
+    if (!s) return null;
+    let h, m;
+    if (s.length <= 2)      { h = parseInt(s, 10);              m = 0; }
+    else if (s.length === 3) { h = parseInt(s[0], 10);           m = parseInt(s.slice(1), 10); }
+    else                     { h = parseInt(s.slice(0, 2), 10);  m = parseInt(s.slice(2, 4), 10); }
+    h = Math.min(23, Math.max(0, h));
+    m = Math.min(59, Math.max(0, m));
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  function initTimeInputs() {
+    document.querySelectorAll('.time-input').forEach(input => {
+      input.addEventListener('focus', () => {
+        input.dataset.prev = input.value;
+        input.value = '';
+      });
+      input.addEventListener('blur', () => {
+        const parsed = parseTimeInput(input.value);
+        input.value = parsed || input.dataset.prev || '';
+        delete input.dataset.prev;
+      });
+      input.addEventListener('wheel', e => {
+        e.preventDefault();
+        const base = parseTimeInput(input.value || input.dataset.prev) || '00:00';
+        const [h, m] = base.split(':').map(Number);
+        let total = h * 60 + m + (e.deltaY < 0 ? 15 : -15);
+        total = ((total % 1440) + 1440) % 1440;
+        input.value = `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+      }, { passive: false });
+    });
+  }
+
+  function copyDayConfig(from, to) {
+    const closed = document.getElementById(`hclosed_${from}`).checked;
+    document.getElementById(`hclosed_${to}`).checked = closed;
+    toggleDayClosed(to, closed);
+    ['hs1from', 'hs1to', 'hs2from', 'hs2to'].forEach(p => {
+      document.getElementById(`${p}_${to}`).value = document.getElementById(`${p}_${from}`).value;
+    });
+    const s2 = document.getElementById(`hs2active_${from}`).checked;
+    document.getElementById(`hs2active_${to}`).checked = s2;
+    toggleSlot2(to, s2);
+    document.getElementById(`hnote_${to}`).value = document.getElementById(`hnote_${from}`).value;
+  }
+
+  function applyDayToAll(sourceDay) {
+    DAYS.forEach(day => { if (day !== sourceDay) copyDayConfig(sourceDay, day); });
+  }
+
+  function copyToNextDay(sourceDay) {
+    const idx = DAYS.indexOf(sourceDay);
+    if (idx !== -1 && idx < DAYS.length - 1) copyDayConfig(sourceDay, DAYS[idx + 1]);
+  }
+
+  async function submitHours() {
+    const hours = DAYS.map(day => ({
+      day,
+      is_closed:     document.getElementById(`hclosed_${day}`).checked,
+      slot_1_from:   parseTimeInput(document.getElementById(`hs1from_${day}`).value),
+      slot_1_to:     parseTimeInput(document.getElementById(`hs1to_${day}`).value),
+      slot_2_active: document.getElementById(`hs2active_${day}`).checked,
+      slot_2_from:   parseTimeInput(document.getElementById(`hs2from_${day}`).value),
+      slot_2_to:     parseTimeInput(document.getElementById(`hs2to_${day}`).value),
+      note:          document.getElementById(`hnote_${day}`).value.trim() || null,
+    }));
+    try {
+      await api('PUT', '/api/restaurant/opening-hours', { hours });
+      showToast(tr('hours_updated'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // ── Overrides ────────────────────────────────────────────────────────────────
+  function openAddOverrideModal() {
+    document.getElementById('ovDate').value = '';
+    document.getElementById('ovClosed').checked = true;
+    document.getElementById('ovSlots').classList.add('hidden');
+    document.getElementById('ovS1from').value = '';
+    document.getElementById('ovS1to').value   = '';
+    document.getElementById('ovS2active').checked = false;
+    document.getElementById('ovSlot2').classList.add('hidden');
+    document.getElementById('ovS2from').value = '';
+    document.getElementById('ovS2to').value   = '';
+    document.getElementById('ovNote').value   = '';
+    openModal('addOverrideModal');
+  }
+
+  function toggleOverrideClosed(closed) {
+    document.getElementById('ovSlots').classList.toggle('hidden', closed);
+  }
+
+  function toggleOverrideSlot2(active) {
+    document.getElementById('ovSlot2').classList.toggle('hidden', !active);
+  }
+
+  async function submitOverride() {
+    const date = document.getElementById('ovDate').value;
+    if (!date) return showToast(tr('error_select_date'), 'error');
+    const closed = document.getElementById('ovClosed').checked;
+    try {
+      await api('POST', '/api/restaurant/opening-hours/overrides', {
+        date,
+        is_closed:    closed,
+        slot_1_from:  closed ? null : (document.getElementById('ovS1from').value || null),
+        slot_1_to:    closed ? null : (document.getElementById('ovS1to').value   || null),
+        slot_2_active: !closed && document.getElementById('ovS2active').checked,
+        slot_2_from:  document.getElementById('ovS2from').value || null,
+        slot_2_to:    document.getElementById('ovS2to').value   || null,
+        note:         document.getElementById('ovNote').value.trim() || null,
+      });
+      showToast(tr('override_added'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function deleteOverride(id) {
+    confirmDelete('Remove this date override?', async () => {
+      try {
+        await api('DELETE', `/api/restaurant/opening-hours/overrides/${id}`);
+        showToast(tr('override_deleted'));
+        reloadAfter();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
+
+  // ── Contact ──────────────────────────────────────────────────────────────────
+  function openEditContactModal() { openModal('editContactModal'); }
+
+  async function submitContact() {
+    const SOCIAL_KEYS = <%- JSON.stringify(['instagram_url','facebook_url','tripadvisor_url','google_url','twitter_url','linkedin_url','youtube_url']) %>;
+    const rawMapUrl = document.getElementById('cMapUrl').value.trim();
+    const mapSrcMatch = rawMapUrl.match(/src="([^"]+)"/);
+    const body = {
+      phone:              document.getElementById('cPhone').value.trim(),
+      whatsapp:           document.getElementById('cWhatsapp').value.trim(),
+      email_general:      document.getElementById('cEmailGeneral').value.trim(),
+      email_reservations: document.getElementById('cEmailRes').value.trim(),
+      address:            document.getElementById('cAddress').value.trim(),
+      map_url:            mapSrcMatch ? mapSrcMatch[1] : rawMapUrl,
+    };
+    SOCIAL_KEYS.forEach(k => {
+      body[k] = document.getElementById(`cSocial_${k}`)?.value.trim() || '';
+    });
+    try {
+      await api('PUT', '/api/restaurant/contact', body);
+      showToast(tr('contact_updated'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // ── Announcement ─────────────────────────────────────────────────────────────
+  function openEditAnnouncementModal() { openModal('editAnnouncementModal'); }
+
+  function toggleCtaFields(active) {
+    document.getElementById('annCtaFields').classList.toggle('hidden', !active);
+  }
+
+  document.getElementById('annImage').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    document.getElementById('annImageThumb').src = URL.createObjectURL(file);
+    document.getElementById('annImagePreview').classList.remove('hidden');
+    document.getElementById('annImagePreview').querySelector('.image-preview__label').textContent = 'New image selected';
+  });
+
+  async function submitAnnouncement() {
+    const fd = new FormData();
+    fd.append('title',      document.getElementById('annTitle').value.trim());
+    fd.append('body',       document.getElementById('annBody').value.trim());
+    fd.append('cta_active', document.getElementById('annCtaActive').checked);
+    fd.append('cta_label',  document.getElementById('annCtaLabel').value.trim());
+    fd.append('cta_url',    document.getElementById('annCtaUrl').value.trim());
+    const img = document.getElementById('annImage').files[0];
+    if (img) fd.append('announcement_image', img);
+    try {
+      await api('PUT', '/api/restaurant/announcement', fd);
+      showToast(tr('announcement_updated'));
+      reloadAfter();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  initTimeInputs();
+
+  async function toggleAnnouncement(active) {
+    const lbl = document.getElementById('annActiveLabel');
+    try {
+      await api('PUT', '/api/restaurant/announcement', { is_active: active });
+      lbl.textContent = active ? <%- JSON.stringify(t('page.restaurant.announcement_live')) %> : <%- JSON.stringify(t('page.restaurant.announcement_off')) %>;
+      lbl.className   = `smb-avail-label smb-avail-label--${active ? 'on' : 'off'}`;
+      showToast(active ? tr('announcement_live') : tr('announcement_hidden'));
+    } catch (err) {
+      document.getElementById('annActiveToggle').checked = !active;
+      showToast(err.message, 'error');
+    }
+  }
+</script>
+
+</body>
+</html>
