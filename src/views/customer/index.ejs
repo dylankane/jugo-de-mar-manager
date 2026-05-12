@@ -52,10 +52,20 @@
           <% const categoryTrans = pickT(category.translations); %>
           <section class="category-section" id="category-<%= category.id %>">
 
-            <div class="category-header<%= category.image_url ? ' category-header--has-image' : '' %>"<%= category.image_url ? ' style="background-image:url(\'' + category.image_url + '\')"' : '' %>>
+            <%# IMAGE HEADER — disabled pending client decision on per-category images %>
+            <%# To re-enable: delete the plain header block below and change `if (false)` to `if (true)` %>
+            <% if (false) { %>
+              <div class="category-header<%= category.image_url ? ' category-header--has-image' : '' %>"<%= category.image_url ? ' style="background-image:url(\'' + category.image_url + '\')"' : '' %>>
+                <h2 class="category-title"><%= categoryTrans.name || 'Category' %></h2>
+              </div>
+              <% if (!category.image_url && categoryTrans.description) { %>
+                <p class="category-description"><%= categoryTrans.description %></p>
+              <% } %>
+            <% } %>
+            <div class="category-header">
               <h2 class="category-title"><%= categoryTrans.name || 'Category' %></h2>
             </div>
-            <% if (!category.image_url && categoryTrans.description) { %>
+            <% if (categoryTrans.description) { %>
               <p class="category-description"><%= categoryTrans.description %></p>
             <% } %>
 
@@ -75,7 +85,7 @@
                   <% if (content.type === 'item') { %>
                     <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                   <% } else if (content.type === 'set_menu') { %>
-                    <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
+                    <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt, compact: !category.is_protected }) %>
                   <% } %>
                 <% }); %>
               </div>
@@ -106,13 +116,20 @@
                         <% if (content.type === 'item') { %>
                           <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                         <% } else if (content.type === 'set_menu') { %>
-                          <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
+                          <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt, compact: !subcategory.is_protected }) %>
                         <% } %>
                       <% }); %>
                     </div>
+                    <% if (subTrans.public_notes) { %>
+                      <p class="category-notes"><%= subTrans.public_notes %></p>
+                    <% } %>
                   </div>
                 <% } %>
               <% }); %>
+            <% } %>
+
+            <% if (categoryTrans.public_notes) { %>
+              <p class="category-notes"><%= categoryTrans.public_notes %></p>
             <% } %>
 
           </section>
@@ -131,7 +148,7 @@
           <h3 class="club-banner-title"><%= mt('club.banner.title') %></h3>
           <p class="club-banner-description"><%= mt('club.banner.desc') %></p>
         </div>
-        <a href="/menu/club-join?lang=<%= lang %>" class="club-banner-btn"><%= mt('club.banner.btn') %></a>
+        <a href="/menu/club-join?lang=<%= lang %>" class="club-banner-btn btn"><%= mt('club.banner.btn') %></a>
       </div>
     </section>
 
@@ -143,6 +160,8 @@
     </footer>
 
   </div>
+
+  <%- include('./partials/boceto-footer') %>
 
   <%- include('./partials/item-modal', { mt }) %>
 

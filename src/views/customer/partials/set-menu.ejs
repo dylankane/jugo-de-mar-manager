@@ -3,6 +3,7 @@
   const setMenuName  = setMenuTrans.name || 'Set Menu';
   const setMenuDesc  = setMenuTrans.description || '';
   const setMenuNotes = setMenuTrans.public_notes || '';
+  const isCompact    = !!locals.compact;
 
   const finalPrice = setMenu.has_discount
     ? (setMenu.discount_type === 'percent'
@@ -10,11 +11,11 @@
         : Number(setMenu.price) - Number(setMenu.discount_value))
     : Number(setMenu.price);
 %>
-<article class="set-menu-item" data-set-menu-id="<%= setMenu.id %>">
+<article class="set-menu-item<%= isCompact ? ' set-menu-item--compact' : '' %>" data-set-menu-id="<%= setMenu.id %>">
   <div class="set-menu-header">
     <div class="set-menu-name-wrap">
       <h4 class="set-menu-name"><%= setMenuName %></h4>
-      <span class="set-menu-badge"><%= mt('menu.set_menu_label') %></span>
+      <span class="set-menu-badge badge"><%= mt('menu.set_menu_label') %></span>
     </div>
     <span class="set-menu-price">€<%= finalPrice.toFixed(2) %></span>
   </div>
@@ -23,65 +24,95 @@
     <p class="set-menu-description"><%= setMenuDesc %></p>
   <% } %>
 
-  <% if (setMenu.courses && setMenu.courses.length > 0) { %>
-    <div class="set-menu-courses">
-      <% setMenu.courses.forEach(courseSection => { %>
-        <% const courseTrans     = pickT(courseSection.course.translations); %>
-        <% const courseNoteTrans = pickT(courseSection.translations); %>
-        <div class="set-menu-course">
-          <div class="set-menu-course-title"><%= courseTrans.name || 'Course' %></div>
-          <% if (courseNoteTrans.public_notes) { %>
-            <div class="set-menu-course-note"><%= courseNoteTrans.public_notes %></div>
-          <% } %>
-          <% if (courseSection.dishes && courseSection.dishes.length > 0) { %>
-            <div class="set-menu-dishes">
-              <% courseSection.dishes.forEach(dishItem => { %>
-                <% if (dishItem.dish) { %>
-                  <% const dishTrans     = pickT(dishItem.dish.translations); %>
-                  <% const dishNoteTrans = pickT(dishItem.translations); %>
-                  <%
-                    const dishDietaryList  = (dishItem.dish.dietary  || []).map(d => pickT(d.dietary_tag.translations).name).filter(Boolean);
-                    const dishAllergenList = (dishItem.dish.allergens || []).map(a => pickT(a.allergen.translations).name).filter(Boolean);
-                    const dishHasModal     = dishDietaryList.length > 0 || dishAllergenList.length > 0;
-                  %>
-                  <div class="set-menu-dish">
-                    <div class="set-menu-dish-inner">
-                      <span class="set-menu-dish-name">
-                        <%= dishTrans.name || 'Dish' %>
-                        <% if (dishHasModal) { %>
-                          <button
-                            type="button"
-                            class="item-detail-trigger"
-                            data-item-name="<%= dishTrans.name || 'Dish' %>"
-                            data-item-description=""
-                            data-item-image=""
-                            data-dietary="<%= JSON.stringify(dishDietaryList) %>"
-                            data-allergens="<%= JSON.stringify(dishAllergenList) %>"
-                            aria-label="<%= mt('menu.view_details') %>"
-                            style="font-size:0.65rem;padding:1px 6px;"
-                          >
-                            <svg class="icon" aria-hidden="true" style="width:0.65rem;height:0.65rem;"><use href="/customer/icons/sprite.svg#info-circle"></use></svg>
-                          </button>
-                        <% } %>
-                      </span>
-                      <% if (dishTrans.description) { %>
-                        <div class="set-menu-dish-description"><%= dishTrans.description %></div>
-                      <% } %>
-                      <% if (dishNoteTrans.notes) { %>
-                        <div class="set-menu-dish-description"><%= dishNoteTrans.notes %></div>
-                      <% } %>
-                    </div>
-                  </div>
-                <% } %>
-              <% }); %>
-            </div>
-          <% } %>
-        </div>
-      <% }); %>
+  <% if (isCompact) { %>
+    <div class="set-menu-actions">
+      <button
+        type="button"
+        class="set-menu-expand-trigger"
+        aria-expanded="false"
+        aria-controls="sm-detail-<%= setMenu.id %>"
+        aria-label="<%= mt('menu.view_details') %>"
+      >
+        <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
+      </button>
     </div>
   <% } %>
 
-  <% if (setMenuNotes) { %>
-    <p class="set-menu-notes"><%= setMenuNotes %></p>
-  <% } %>
+  <div class="set-menu-details<%= isCompact ? ' set-menu-details--collapsible' : '' %>"
+       id="sm-detail-<%= setMenu.id %>"
+       <%= isCompact ? 'aria-hidden="true"' : '' %>>
+
+    <% if (setMenu.courses && setMenu.courses.length > 0) { %>
+      <div class="set-menu-courses">
+        <% setMenu.courses.forEach(courseSection => { %>
+          <% const courseTrans     = pickT(courseSection.course.translations); %>
+          <% const courseNoteTrans = pickT(courseSection.translations); %>
+          <div class="set-menu-course">
+            <div class="set-menu-course-title"><%= courseTrans.name || 'Course' %></div>
+            <% if (courseNoteTrans.public_notes) { %>
+              <div class="set-menu-course-note"><%= courseNoteTrans.public_notes %></div>
+            <% } %>
+            <% if (courseSection.dishes && courseSection.dishes.length > 0) { %>
+              <div class="set-menu-dishes">
+                <% courseSection.dishes.forEach(dishItem => { %>
+                  <% if (dishItem.dish) { %>
+                    <% const dishTrans     = pickT(dishItem.dish.translations); %>
+                    <% const dishNoteTrans = pickT(dishItem.translations); %>
+                    <%
+                      const dishDietaryList  = (dishItem.dish.dietary  || []).map(d => pickT(d.dietary_tag.translations).name).filter(Boolean);
+                      const dishAllergenList = (dishItem.dish.allergens || []).map(a => pickT(a.allergen.translations).name).filter(Boolean);
+                      const dishHasModal     = dishDietaryList.length > 0 || dishAllergenList.length > 0;
+                    %>
+                    <div class="set-menu-dish">
+                      <div class="set-menu-dish-inner">
+                        <span class="set-menu-dish-name">
+                          <%= dishTrans.name || 'Dish' %>
+                          <% if (dishHasModal) { %>
+                            <button
+                              type="button"
+                              class="item-detail-trigger"
+                              data-item-name="<%= dishTrans.name || 'Dish' %>"
+                              data-item-description=""
+                              data-item-image=""
+                              data-dietary="<%= JSON.stringify(dishDietaryList) %>"
+                              data-allergens="<%= JSON.stringify(dishAllergenList) %>"
+                              aria-label="<%= mt('menu.view_details') %>"
+                            >
+                              <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#info-circle"></use></svg>
+                            </button>
+                          <% } %>
+                        </span>
+                        <% if (dishTrans.description) { %>
+                          <div class="set-menu-dish-description"><%= dishTrans.description %></div>
+                        <% } %>
+                        <% if (dishNoteTrans.notes) { %>
+                          <div class="set-menu-dish-description"><%= dishNoteTrans.notes %></div>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% } %>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <% if (setMenuNotes) { %>
+      <p class="set-menu-notes"><%= setMenuNotes %></p>
+    <% } %>
+
+    <% if (isCompact) { %>
+      <button
+        type="button"
+        class="set-menu-collapse-trigger"
+        aria-label="Collapse"
+        data-sm-controls="sm-detail-<%= setMenu.id %>"
+      >
+        <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
+      </button>
+    <% } %>
+
+  </div>
 </article>

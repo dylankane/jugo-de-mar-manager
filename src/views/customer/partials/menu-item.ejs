@@ -19,10 +19,7 @@
     <div class="menu-item-name-wrap">
       <h4 class="menu-item-name"><%= itemName %></h4>
       <% if (item.is_special) { %>
-        <span class="special-badge" aria-label="<%= mt('menu.special') %>">
-          <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#star"></use></svg>
-          <%= mt('menu.special') %>
-        </span>
+        <span class="special-badge badge" aria-label="<%= mt('menu.special') %>"><%= mt('menu.special') %></span>
       <% } %>
     </div>
     <span class="menu-item-price">€<%= finalPrice.toFixed(2) %></span>

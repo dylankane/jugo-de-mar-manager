@@ -55,11 +55,11 @@
           <p class="form-consent-text"><%= mt('club_join.consent_text') %></p>
         </div>
 
-        <button type="submit" class="btn-submit"><%= mt('club_join.btn_submit') %></button>
+        <button type="submit" class="btn-submit btn"><%= mt('club_join.btn_submit') %></button>
       </form>
 
       <div class="club-join-footer">
-        <a href="/menu?lang=<%= lang %>" class="club-back-link"><%= mt('club_join.btn_back') %></a>
+        <a href="/menu?lang=<%= lang %>" class="club-back-link btn btn-sm"><%= mt('club_join.btn_back') %></a>
       </div>
     </main>
 
@@ -69,6 +69,8 @@
       </div>
     </footer>
   </div>
+
+  <%- include('./partials/boceto-footer') %>
 
   <div id="toast" class="toast hidden"></div>
 

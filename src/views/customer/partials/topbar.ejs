@@ -1,3 +1,15 @@
 <header class="menu-topbar">
-  <%- include('./lang-selector', { lang, enabledLangs }) %>
+  <div class="menu-topbar-inner">
+
+    <% if (locals.logoSvgUrl) { %>
+      <a href="https://www.somdemar.eu" class="topbar-logo-link" target="_blank" rel="noopener noreferrer" aria-label="<%= locals.restaurantName || '' %>">
+        <span class="topbar-logo" style="-webkit-mask-image: url('<%= locals.logoSvgUrl %>'); mask-image: url('<%= locals.logoSvgUrl %>')"></span>
+      </a>
+    <% } else { %>
+      <span></span>
+    <% } %>
+
+    <%- include('./lang-selector', { lang, enabledLangs }) %>
+
+  </div>
 </header>

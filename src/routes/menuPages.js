@@ -154,6 +154,7 @@ router.get('/legal', async (req, res, next) => {
       lang,
       enabledLangs,
       restaurantName: settings?.restaurant_name || 'Restaurant',
+      logoSvgUrl:     settings?.logo_svg_url    || null,
     });
   } catch (err) {
     next(err);
@@ -175,6 +176,7 @@ router.get('/club-join', async (req, res, next) => {
       lang,
       enabledLangs,
       restaurantName: settings?.restaurant_name || 'Restaurant',
+      logoSvgUrl:     settings?.logo_svg_url    || null,
       mt,
     });
   } catch (err) {
@@ -228,6 +230,7 @@ router.get('/', async (req, res, next) => {
       lang,
       enabledLangs,
       restaurantName: settings.restaurant_name,
+      logoSvgUrl:     settings?.logo_svg_url || null,
       pickT: (translations) => pickT(translations, lang),
       mt,
     });

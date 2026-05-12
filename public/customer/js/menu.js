@@ -107,8 +107,51 @@ function updateActiveCategory() {
   });
 }
 
+// ── Set Menu expand / collapse ─────────────────────────────────────────────
+function openSetMenuDetails(detailsEl, triggerBtn) {
+  detailsEl.classList.add('open');
+  detailsEl.setAttribute('aria-hidden', 'false');
+  if (triggerBtn) triggerBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeSetMenuDetails(detailsEl, triggerBtn) {
+  detailsEl.classList.remove('open');
+  detailsEl.setAttribute('aria-hidden', 'true');
+  if (triggerBtn) triggerBtn.setAttribute('aria-expanded', 'false');
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Set menu expand triggers ──────────────────────────────────
+  document.querySelectorAll('.set-menu-expand-trigger').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const article   = this.closest('.set-menu-item--compact');
+      if (!article) return;
+      const detailsEl = article.querySelector('.set-menu-details--collapsible');
+      if (!detailsEl) return;
+      const isOpen = this.getAttribute('aria-expanded') === 'true';
+      if (isOpen) {
+        closeSetMenuDetails(detailsEl, this);
+      } else {
+        openSetMenuDetails(detailsEl, this);
+      }
+    });
+  });
+
+  // ── Set menu collapse triggers (bottom) ───────────────────────
+  document.querySelectorAll('.set-menu-collapse-trigger').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const detailsEl = this.closest('.set-menu-details--collapsible');
+      if (!detailsEl) return;
+      const article   = detailsEl.closest('.set-menu-item--compact');
+      const expandBtn = article ? article.querySelector('.set-menu-expand-trigger') : null;
+      closeSetMenuDetails(detailsEl, expandBtn);
+      if (expandBtn) {
+        expandBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  });
 
   // ── Item detail modal triggers ────────────────────────────────
   document.querySelectorAll('.item-detail-trigger').forEach(function (btn) {
