@@ -6,18 +6,12 @@
   <title><%= mt('club_join.page_title') %> - <%= restaurantName %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600;700&family=Playwrite+AU+QLD:wght@100..400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/customer/css/menu.css">
 </head>
 <body>
   <%- include('./partials/topbar', { lang, enabledLangs }) %>
-  <div class="menu-container">
-    <header class="menu-header">
-      <h1 class="restaurant-name"><%= restaurantName %></h1>
-      <p class="menu-subtitle"><%= mt('club_join.subtitle') %></p>
-      <div class="menu-divider"></div>
-    </header>
-
+  <div class="club-join-page">
     <main class="club-join-content">
       <div class="club-join-hero">
         <h2 class="club-join-title"><%= mt('club_join.title') %></h2>
@@ -71,7 +65,7 @@
 
     <footer class="menu-footer">
       <div class="menu-footer-links">
-        <a href="/menu/legal" class="menu-footer-link"><%= mt('footer.legal') %></a>
+        <a href="/menu/legal?lang=<%= lang %>" class="menu-footer-link"><%= mt('footer.legal') %></a>
       </div>
     </footer>
   </div>

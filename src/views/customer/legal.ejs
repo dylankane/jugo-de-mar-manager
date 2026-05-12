@@ -6,17 +6,12 @@
   <title>Aviso Legal / Legal Notice — <%= restaurantName %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600;700&family=Playwrite+AU+QLD:wght@100..400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/customer/css/menu.css">
 </head>
 <body>
   <%- include('./partials/topbar', { lang, enabledLangs }) %>
-  <div class="menu-container">
-    <header class="menu-header">
-      <h1 class="restaurant-name"><%= restaurantName %></h1>
-      <div class="menu-divider"></div>
-    </header>
-
+  <div class="legal-page">
     <div class="legal-container">
       <a href="/menu" class="legal-back">← Volver al menú / Back to Menu</a>
 
@@ -26,7 +21,7 @@
 
       <!-- ── SPANISH ────────────────────────────────────────────────────────── -->
       <div class="legal-lang-section">
-        <p class="legal-lang-label">Español</p>
+        <h3 class="legal-lang-title">Español</h3>
 
         <div class="legal-section">
           <h3 class="legal-section-title">1. Información del Titular</h3>
@@ -91,11 +86,11 @@
         </div>
       </div>
 
-      <hr class="legal-separator" />
+      <hr class="legal-divider" />
 
       <!-- ── ENGLISH ─────────────────────────────────────────────────────────── -->
       <div class="legal-lang-section">
-        <p class="legal-lang-label">English</p>
+        <h3 class="legal-lang-title">English</h3>
 
         <div class="legal-section">
           <h3 class="legal-section-title">1. Owner Information</h3>
@@ -165,8 +160,7 @@
     <footer class="menu-footer">
       <p class="menu-footer-text"><%= restaurantName %></p>
       <div class="menu-footer-links">
-        <a href="/menu" class="menu-footer-link">Menú / Menu</a>
-        <a href="/menu/legal" class="menu-footer-link">Aviso Legal / Legal</a>
+        <a href="/menu?lang=<%= lang %>" class="menu-footer-link">Menú / Menu</a>
       </div>
     </footer>
   </div>

@@ -3,32 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= restaurantName %> - Menu</title>
+  <title><%= restaurantName %> - <%= mt('menu.page_title') %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600;700&family=Playwrite+AU+QLD:wght@100..400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/customer/css/menu.css">
 </head>
 <body>
+
   <%- include('./partials/topbar', { lang, enabledLangs }) %>
-  <div class="menu-container">
-    <header class="menu-header">
-      <h1 class="restaurant-name"><%= restaurantName %></h1>
-      <p class="menu-subtitle"><%= mt('menu.subtitle') %></p>
-      <div class="menu-divider"></div>
+
+  <div class="menu-page">
+
+    <header class="menu-page-header menu-page-header--has-image" style="background-image:url('/customer/media/home-hero-1-big.webp')">
+      <h1 class="restaurant-name">
+        <% restaurantName.split(' ').forEach(function(word) { %><span class="restaurant-name__word"><%= word %></span>
+        <% }); %>
+      </h1>
+      <% const subtitleText = mt('menu.subtitle'); %>
+      <% if (subtitleText && subtitleText !== 'menu.subtitle') { %>
+        <p class="menu-subtitle"><%= subtitleText %></p>
+      <% } %>
     </header>
 
     <% if (categories && categories.length > 0) { %>
-      <nav id="categoryNav" class="category-nav">
-        <div class="category-nav-inner">
+    <nav id="categoryNav" class="category-nav">
+      <div class="category-nav-wrap">
+        <div class="category-nav-inner" id="categoryNavInner">
           <% categories.forEach((category, index) => { %>
-            <% const categoryTrans = pickT(category.translations); %>
-            <a href="#category-<%= category.id %>" class="category-nav-link<%= index === 0 ? ' active' : '' %>" data-category="<%= category.id %>">
-              <%= categoryTrans.name || 'Category' %>
-            </a>
+            <% const categoryNavTrans = pickT(category.translations); %>
+            <a
+              href="#category-<%= category.id %>"
+              class="category-nav-link<%= index === 0 ? ' active' : '' %>"
+              data-category="<%= category.id %>"
+            ><%= categoryNavTrans.name || 'Category' %></a>
           <% }); %>
         </div>
-      </nav>
+        <div class="category-nav-chevron" id="categoryNavChevron" aria-hidden="true">
+          <svg class="icon"><use href="/customer/icons/sprite.svg#chevron-right"></use></svg>
+        </div>
+      </div>
+    </nav>
     <% } %>
 
     <main class="menu-content">
@@ -36,22 +51,21 @@
         <% categories.forEach(category => { %>
           <% const categoryTrans = pickT(category.translations); %>
           <section class="category-section" id="category-<%= category.id %>">
-            <div class="category-header">
+
+            <div class="category-header<%= category.image_url ? ' category-header--has-image' : '' %>"<%= category.image_url ? ' style="background-image:url(\'' + category.image_url + '\')"' : '' %>>
               <h2 class="category-title"><%= categoryTrans.name || 'Category' %></h2>
-              <% if (categoryTrans.description) { %>
-                <p class="category-description"><%= categoryTrans.description %></p>
-              <% } %>
             </div>
+            <% if (!category.image_url && categoryTrans.description) { %>
+              <p class="category-description"><%= categoryTrans.description %></p>
+            <% } %>
 
             <%
               const items = (category.menu_item_categories || [])
                 .filter(mic => mic.menu_item && mic.menu_item.is_available)
                 .map(mic => ({ type: 'item', data: mic.menu_item, order: mic.display_order }));
-
               const setMenus = (category.set_menu_categories || [])
                 .filter(smc => smc.set_menu && smc.set_menu.is_available)
                 .map(smc => ({ type: 'set_menu', data: smc.set_menu, order: smc.display_order }));
-
               const allContent = [...items, ...setMenus].sort((a, b) => a.order - b.order);
             %>
 
@@ -59,19 +73,9 @@
               <div class="menu-items-grid">
                 <% allContent.forEach(content => { %>
                   <% if (content.type === 'item') { %>
-                    <%- include('./partials/menu-item', {
-                      item: content.data,
-                      pickT: pickT,
-                      lang: lang,
-                      mt: mt
-                    }) %>
+                    <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                   <% } else if (content.type === 'set_menu') { %>
-                    <%- include('./partials/set-menu', {
-                      setMenu: content.data,
-                      pickT: pickT,
-                      lang: lang,
-                      mt: mt
-                    }) %>
+                    <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
                   <% } %>
                 <% }); %>
               </div>
@@ -84,14 +88,11 @@
                   const subItems = (subcategory.menu_item_categories || [])
                     .filter(mic => mic.menu_item && mic.menu_item.is_available)
                     .map(mic => ({ type: 'item', data: mic.menu_item, order: mic.display_order }));
-
                   const subSetMenus = (subcategory.set_menu_categories || [])
                     .filter(smc => smc.set_menu && smc.set_menu.is_available)
                     .map(smc => ({ type: 'set_menu', data: smc.set_menu, order: smc.display_order }));
-
                   const subAllContent = [...subItems, ...subSetMenus].sort((a, b) => a.order - b.order);
                 %>
-
                 <% if (subAllContent.length > 0) { %>
                   <div class="subcategory-section">
                     <div class="subcategory-header">
@@ -103,19 +104,9 @@
                     <div class="menu-items-grid">
                       <% subAllContent.forEach(content => { %>
                         <% if (content.type === 'item') { %>
-                          <%- include('./partials/menu-item', {
-                            item: content.data,
-                            pickT: pickT,
-                            lang: lang,
-                            mt: mt
-                          }) %>
+                          <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                         <% } else if (content.type === 'set_menu') { %>
-                          <%- include('./partials/set-menu', {
-                            setMenu: content.data,
-                            pickT: pickT,
-                            lang: lang,
-                            mt: mt
-                          }) %>
+                          <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
                         <% } %>
                       <% }); %>
                     </div>
@@ -123,20 +114,19 @@
                 <% } %>
               <% }); %>
             <% } %>
+
           </section>
         <% }); %>
       <% } else { %>
-        <div class="category-section">
-          <div class="category-header">
-            <p class="category-description"><%= mt('menu.empty') %></p>
-          </div>
+        <div class="menu-empty">
+          <p class="menu-empty-text"><%= mt('menu.empty') %></p>
         </div>
       <% } %>
     </main>
 
     <section class="club-banner">
       <div class="club-banner-content">
-        <svg class="club-banner-icon"><use href="/customer/icons/sprite.svg#star-outline"></use></svg>
+        <svg class="club-banner-icon icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#star-outline"></use></svg>
         <div class="club-banner-text">
           <h3 class="club-banner-title"><%= mt('club.banner.title') %></h3>
           <p class="club-banner-description"><%= mt('club.banner.desc') %></p>
@@ -148,19 +138,13 @@
     <footer class="menu-footer">
       <p class="menu-footer-text"><%= mt('footer.tagline') %></p>
       <div class="menu-footer-links">
-        <a href="/menu/legal" class="menu-footer-link"><%= mt('footer.legal') %></a>
+        <a href="/menu/legal?lang=<%= lang %>" class="menu-footer-link"><%= mt('footer.legal') %></a>
       </div>
     </footer>
+
   </div>
 
-  <div id="imageModal" class="image-modal">
-    <button class="image-modal-close" aria-label="Close">&times;</button>
-    <div class="image-modal-content">
-      <img id="modalImage" class="image-modal-img" src="" alt="">
-    </div>
-  </div>
-
-  <%- include('./partials/info-modal', { mt }) %>
+  <%- include('./partials/item-modal', { mt }) %>
 
   <script src="/customer/js/menu.js"></script>
   <%- include('./partials/cookie-banner', { mt }) %>

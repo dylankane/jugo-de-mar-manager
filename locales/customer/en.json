@@ -1,7 +1,11 @@
 {
+  "menu.page_title": "Menu",
   "menu.subtitle": "",
   "menu.empty": "Menu coming soon...",
   "menu.set_menu_label": "Set Menu",
+  "menu.special": "Chef's Special",
+  "menu.view_details": "Details",
+  "menu.close": "Close",
 
   "club.banner.title": "Join Our Gourmet Club",
   "club.banner.desc": "Earn exclusive perks with every reservation and enter our monthly raffle to win a Chef's Special Tasting Menu for two.",

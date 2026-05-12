@@ -1,27 +1,91 @@
-function openImageModal(imageUrl, itemName, itemDescription) {
-  const modal = document.getElementById('imageModal');
-  const modalImage = document.getElementById('modalImage');
-  modalImage.src = imageUrl;
-  modalImage.alt = itemName || 'Menu item image';
+// ── Unified Item Detail Modal ──────────────────────────────────────────────
+function openItemModal(name, description, imageUrl, dietary, allergens) {
+  const modal          = document.getElementById('itemModal');
+  const modalImage     = document.getElementById('itemModalImage');
+  const modalName      = document.getElementById('itemModalName');
+  const modalDesc      = document.getElementById('itemModalDescription');
+  const dietarySection = document.getElementById('itemModalDietarySection');
+  const allergenSection= document.getElementById('itemModalAllergenSection');
+  const dietaryTags    = document.getElementById('itemModalDietaryTags');
+  const allergenTags   = document.getElementById('itemModalAllergenTags');
+  const noInfo         = document.getElementById('itemModalNoInfo');
+
+  if (!modal) return;
+
+  modalName.textContent = name || '';
+  dietaryTags.innerHTML  = '';
+  allergenTags.innerHTML = '';
+
+  if (imageUrl) {
+    modalImage.src = imageUrl;
+    modalImage.alt = name || '';
+    modalImage.style.display = 'block';
+  } else {
+    modalImage.style.display = 'none';
+    modalImage.src = '';
+  }
+
+  if (description) {
+    modalDesc.textContent    = description;
+    modalDesc.style.display  = 'block';
+  } else {
+    modalDesc.style.display  = 'none';
+  }
+
+  const hasDietary   = dietary   && dietary.length   > 0;
+  const hasAllergens = allergens && allergens.length  > 0;
+
+  if (hasDietary) {
+    dietary.forEach(tag => {
+      const span = document.createElement('span');
+      span.className   = 'tag tag-dietary';
+      span.textContent = tag;
+      dietaryTags.appendChild(span);
+    });
+    dietarySection.style.display = 'block';
+  } else {
+    dietarySection.style.display = 'none';
+  }
+
+  if (hasAllergens) {
+    allergens.forEach(tag => {
+      const span = document.createElement('span');
+      span.className   = 'tag tag-allergen';
+      span.textContent = tag;
+      allergenTags.appendChild(span);
+    });
+    allergenSection.style.display = 'block';
+  } else {
+    allergenSection.style.display = 'none';
+  }
+
+  const hasAnyInfo = imageUrl || description || hasDietary || hasAllergens;
+  noInfo.style.display = hasAnyInfo ? 'none' : 'block';
+
+  modal.setAttribute('aria-hidden', 'false');
+  modal.classList.remove('closing');
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
-function closeImageModal() {
-  const modal = document.getElementById('imageModal');
+function closeItemModal() {
+  const modal = document.getElementById('itemModal');
+  if (!modal) return;
   modal.classList.add('closing');
-  setTimeout(() => {
-    modal.classList.remove('closing');
+  setTimeout(function () {
     modal.classList.remove('active');
+    modal.classList.remove('closing');
+    modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-  }, 1500);
+  }, 240);
 }
 
+// ── Scroll helpers ─────────────────────────────────────────────────────────
 function getScrollOffset() {
-  const topbar    = document.querySelector('.menu-topbar');
-  const catNav    = document.getElementById('categoryNav');
-  const topbarH   = topbar  ? topbar.offsetHeight  : 0;
-  const catNavH   = catNav  ? catNav.offsetHeight   : 0;
+  const topbar  = document.querySelector('.menu-topbar');
+  const catNav  = document.getElementById('categoryNav');
+  const topbarH = topbar  ? topbar.offsetHeight  : 0;
+  const catNavH = catNav  ? catNav.offsetHeight   : 0;
   return topbarH + catNavH;
 }
 
@@ -29,148 +93,89 @@ function updateActiveCategory() {
   const sections = document.querySelectorAll('.category-section');
   const navLinks = document.querySelectorAll('.category-nav-link');
   const offset   = getScrollOffset() + 20;
+  const scrollPos = window.scrollY + offset;
+  let current = '';
 
-  let currentSection = '';
-  const scrollPosition = window.scrollY + offset;
-
-  sections.forEach(section => {
-    const sectionTop    = section.offsetTop;
-    const sectionHeight = section.offsetHeight;
-    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-      currentSection = section.getAttribute('id');
+  sections.forEach(function (section) {
+    if (scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
+      current = section.id;
     }
   });
 
-  navLinks.forEach(link => {
-    link.classList.remove('active');
-    if (link.getAttribute('href') === '#' + currentSection) {
-      link.classList.add('active');
-    }
+  navLinks.forEach(function (link) {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
   });
 }
 
-function openInfoModal(itemName, dietary, allergens) {
-  const modal          = document.getElementById('infoModal');
-  const modalTitle     = document.getElementById('infoModalTitle');
-  const dietarySection = document.getElementById('dietarySection');
-  const allergenSection= document.getElementById('allergenSection');
-  const dietaryTags    = document.getElementById('dietaryTags');
-  const allergenTags   = document.getElementById('allergenTags');
-  const noInfoMessage  = document.getElementById('noInfoMessage');
-
-  modalTitle.textContent = itemName;
-  dietaryTags.innerHTML  = '';
-  allergenTags.innerHTML = '';
-
-  const hasDietary  = dietary  && dietary.length  > 0;
-  const hasAllergens= allergens && allergens.length > 0;
-
-  if (hasDietary) {
-    dietarySection.style.display = 'block';
-    dietary.forEach(tag => {
-      const span = document.createElement('span');
-      span.className   = 'tag tag-dietary';
-      span.textContent = tag;
-      dietaryTags.appendChild(span);
-    });
-  } else {
-    dietarySection.style.display = 'none';
-  }
-
-  if (hasAllergens) {
-    allergenSection.style.display = 'block';
-    allergens.forEach(tag => {
-      const span = document.createElement('span');
-      span.className   = 'tag tag-allergen';
-      span.textContent = tag;
-      allergenTags.appendChild(span);
-    });
-  } else {
-    allergenSection.style.display = 'none';
-  }
-
-  noInfoMessage.style.display = (!hasDietary && !hasAllergens) ? 'block' : 'none';
-
-  modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeInfoModal() {
-  const modal = document.getElementById('infoModal');
-  modal.classList.remove('active');
-  document.body.style.overflow = '';
-}
-
+// ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-  // ── Image modal ───────────────────────────────────────────────
-  const imageModal = document.getElementById('imageModal');
-  const closeBtn   = document.querySelector('.image-modal-close');
 
-  if (closeBtn) closeBtn.addEventListener('click', closeImageModal);
-  if (imageModal) {
-    imageModal.addEventListener('click', function (e) {
-      if (e.target === imageModal) closeImageModal();
-    });
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeImageModal(); closeInfoModal(); }
-  });
-
-  document.querySelectorAll('.menu-item-image-trigger').forEach(trigger => {
-    trigger.addEventListener('click', function () {
-      openImageModal(
-        this.getAttribute('data-image'),
-        this.getAttribute('data-name'),
-        this.getAttribute('data-description')
+  // ── Item detail modal triggers ────────────────────────────────
+  document.querySelectorAll('.item-detail-trigger').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dietary   = JSON.parse(this.dataset.dietary   || '[]');
+      const allergens = JSON.parse(this.dataset.allergens || '[]');
+      openItemModal(
+        this.dataset.itemName,
+        this.dataset.itemDescription,
+        this.dataset.itemImage,
+        dietary,
+        allergens
       );
     });
   });
 
-  // ── Info modal ────────────────────────────────────────────────
-  const infoModal = document.getElementById('infoModal');
-  if (infoModal) {
-    infoModal.querySelectorAll('[data-close-modal]').forEach(el => {
-      el.addEventListener('click', closeInfoModal);
-    });
+  // ── Close modal ───────────────────────────────────────────────
+  const itemModal = document.getElementById('itemModal');
+  if (itemModal) {
+    document.getElementById('itemModalClose').addEventListener('click', closeItemModal);
+    document.getElementById('itemModalOverlay').addEventListener('click', closeItemModal);
   }
 
-  document.querySelectorAll('.info-btn, .menu-item-info-trigger').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const dietary  = JSON.parse(this.getAttribute('data-dietary')  || '[]');
-      const allergens= JSON.parse(this.getAttribute('data-allergens') || '[]');
-      openInfoModal(this.getAttribute('data-item-name'), dietary, allergens);
-    });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeItemModal();
   });
 
   // ── Category nav ──────────────────────────────────────────────
-  const categoryNav = document.getElementById('categoryNav');
+  const categoryNav     = document.getElementById('categoryNav');
+  const categoryNavInner   = document.getElementById('categoryNavInner');
+  const categoryNavChevron = document.getElementById('categoryNavChevron');
+
   if (categoryNav) {
-    categoryNav.querySelectorAll('.category-nav-link').forEach(link => {
+    categoryNav.querySelectorAll('.category-nav-link').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
-        const targetId      = this.getAttribute('href').substring(1);
-        const targetSection = document.getElementById(targetId);
-        if (targetSection) {
-          const offset        = getScrollOffset() + 20;
-          const targetPosition= targetSection.offsetTop - offset;
-          window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        const target = document.getElementById(this.getAttribute('href').substring(1));
+        if (target) {
+          window.scrollTo({ top: target.offsetTop - getScrollOffset() - 20, behavior: 'smooth' });
         }
       });
     });
 
-    // Toggle `.stuck` shadow when category nav is pinned below the topbar
     function updateStuck() {
-      const topbar  = document.querySelector('.menu-topbar');
-      const topbarH = topbar ? topbar.offsetHeight : 0;
+      const topbarH = document.querySelector('.menu-topbar') ? document.querySelector('.menu-topbar').offsetHeight : 0;
       categoryNav.classList.toggle('stuck', window.scrollY > categoryNav.offsetTop - topbarH);
     }
 
-    window.addEventListener('scroll', updateActiveCategory);
-    window.addEventListener('scroll', updateStuck);
+    // ── Chevron overflow hint ────────────────────────────────────────────────
+    function updateChevron() {
+      if (!categoryNavInner || !categoryNavChevron) return;
+      const canScroll = categoryNavInner.scrollWidth > categoryNavInner.clientWidth;
+      const atEnd     = categoryNavInner.scrollLeft + categoryNavInner.clientWidth >= categoryNavInner.scrollWidth - 8;
+      categoryNavChevron.classList.toggle('visible', canScroll && !atEnd);
+    }
+
+    if (categoryNavInner) {
+      categoryNavInner.addEventListener('scroll', updateChevron, { passive: true });
+    }
+
+    window.addEventListener('resize', updateChevron, { passive: true });
+    window.addEventListener('scroll', updateActiveCategory, { passive: true });
+    window.addEventListener('scroll', updateStuck, { passive: true });
     updateActiveCategory();
     updateStuck();
+    updateChevron();
   }
 });

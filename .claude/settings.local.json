@@ -54,7 +54,9 @@
       "PowerShell(New-Item *)",
       "Bash(grep -E \"^\\(server\\\\.js|src/routes/adminPages\\\\.js\\)$\")",
       "Bash(Get-ChildItem C:\\\\Users\\\\dylan\\\\menu-management\\\\public\\\\admin\\\\icons *)",
-      "Bash(npm audit *)"
+      "Bash(npm audit *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\dylan\\\\jugo-de-mar-manager\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)"
     ]
   }
 }
