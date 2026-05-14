@@ -55,8 +55,10 @@
       "Bash(grep -E \"^\\(server\\\\.js|src/routes/adminPages\\\\.js\\)$\")",
       "Bash(Get-ChildItem C:\\\\Users\\\\dylan\\\\menu-management\\\\public\\\\admin\\\\icons *)",
       "Bash(npm audit *)",
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\dylan\\\\jugo-de-mar-manager\" -Force)",
-      "Bash(Select-Object Name, PSIsContainer)"
+      "Bash(dir C:\\\\Users\\\\dylan\\\\menu-management\\\\*.js /b)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\dylan\\\\menu-management\" -MaxDepth 1 -Filter \"*.js\")",
+      "Bash(Select-Object Name)",
+      "Bash(grep -rn \"confirm\\(\\\\`\\\\|confirm\\('.*'\" src/views/admin --include=\"*.ejs\")"
     ]
   }
 }
