@@ -43,6 +43,31 @@
           <input type="tel" id="memberPhone" name="phone" class="form-input">
         </div>
 
+        <div class="form-group">
+          <label class="form-label"><%= mt('club_join.label_birthday') %> <span class="form-optional"><%= mt('club_join.optional') %></span></label>
+          <div class="form-birthday">
+            <select id="memberBirthdayMonth" name="birthday_month" class="form-input">
+              <option value=""><%= mt('club_join.birthday_month') %></option>
+              <option value="1">Jan</option>
+              <option value="2">Feb</option>
+              <option value="3">Mar</option>
+              <option value="4">Apr</option>
+              <option value="5">May</option>
+              <option value="6">Jun</option>
+              <option value="7">Jul</option>
+              <option value="8">Aug</option>
+              <option value="9">Sep</option>
+              <option value="10">Oct</option>
+              <option value="11">Nov</option>
+              <option value="12">Dec</option>
+            </select>
+            <select id="memberBirthdayDay" name="birthday_day" class="form-input">
+              <option value=""><%= mt('club_join.birthday_day') %></option>
+              <% for (var d = 1; d <= 31; d++) { %><option value="<%= d %>"><%= d %></option><% } %>
+            </select>
+          </div>
+        </div>
+
         <div class="form-consent">
           <p class="form-consent-text"><%= mt('club_join.consent_text') %></p>
         </div>
@@ -86,10 +111,14 @@
     document.getElementById('clubJoinForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
+      var monthVal = document.getElementById('memberBirthdayMonth').value;
+      var dayVal   = document.getElementById('memberBirthdayDay').value;
       var formData = {
         name:               document.getElementById('memberName').value.trim(),
         email:              document.getElementById('memberEmail').value.trim(),
         phone:              document.getElementById('memberPhone').value.trim() || null,
+        birthday_month:     monthVal ? parseInt(monthVal, 10) : null,
+        birthday_day:       dayVal   ? parseInt(dayVal,   10) : null,
         marketing_consent:  true,
         source:             'qr_menu'
       };

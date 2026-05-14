@@ -3,7 +3,7 @@
   const setMenuName  = setMenuTrans.name || 'Set Menu';
   const setMenuDesc  = setMenuTrans.description || '';
   const setMenuNotes = setMenuTrans.public_notes || '';
-  const isCompact    = !!locals.compact;
+  const courseCount  = (setMenu.courses || []).length;
 
   const finalPrice = setMenu.has_discount
     ? (setMenu.discount_type === 'percent'
@@ -11,7 +11,7 @@
         : Number(setMenu.price) - Number(setMenu.discount_value))
     : Number(setMenu.price);
 %>
-<article class="set-menu-item<%= isCompact ? ' set-menu-item--compact' : '' %>" data-set-menu-id="<%= setMenu.id %>">
+<article class="set-menu-item set-menu-item--compact" data-set-menu-id="<%= setMenu.id %>">
   <div class="set-menu-header">
     <div class="set-menu-name-wrap">
       <h4 class="set-menu-name"><%= setMenuName %></h4>
@@ -24,23 +24,24 @@
     <p class="set-menu-description"><%= setMenuDesc %></p>
   <% } %>
 
-  <% if (isCompact) { %>
-    <div class="set-menu-actions">
-      <button
-        type="button"
-        class="set-menu-expand-trigger"
-        aria-expanded="false"
-        aria-controls="sm-detail-<%= setMenu.id %>"
-        aria-label="<%= mt('menu.view_details') %>"
-      >
-        <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
-      </button>
-    </div>
-  <% } %>
+  <div class="set-menu-actions">
+    <% if (courseCount > 0) { %>
+      <span class="set-menu-course-count">&#9679; <%= courseCount %> <%= mt('menu.courses_count') %></span>
+    <% } %>
+    <button
+      type="button"
+      class="set-menu-expand-trigger"
+      aria-expanded="false"
+      aria-controls="sm-detail-<%= setMenu.id %>"
+      aria-label="<%= mt('menu.view_details') %>"
+    >
+      <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
+    </button>
+  </div>
 
-  <div class="set-menu-details<%= isCompact ? ' set-menu-details--collapsible' : '' %>"
+  <div class="set-menu-details set-menu-details--collapsible"
        id="sm-detail-<%= setMenu.id %>"
-       <%= isCompact ? 'aria-hidden="true"' : '' %>>
+       aria-hidden="true">
 
     <% if (setMenu.courses && setMenu.courses.length > 0) { %>
       <div class="set-menu-courses">
@@ -103,16 +104,14 @@
       <p class="set-menu-notes"><%= setMenuNotes %></p>
     <% } %>
 
-    <% if (isCompact) { %>
-      <button
-        type="button"
-        class="set-menu-collapse-trigger"
-        aria-label="Collapse"
-        data-sm-controls="sm-detail-<%= setMenu.id %>"
-      >
-        <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
-      </button>
-    <% } %>
+    <button
+      type="button"
+      class="set-menu-collapse-trigger"
+      aria-label="Collapse"
+      data-sm-controls="sm-detail-<%= setMenu.id %>"
+    >
+      <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#chevron-down"></use></svg>
+    </button>
 
   </div>
 </article>

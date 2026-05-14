@@ -77,7 +77,7 @@
                   <% if (content.type === 'item') { %>
                     <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                   <% } else if (content.type === 'set_menu') { %>
-                    <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt, compact: !category.is_protected }) %>
+                    <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
                   <% } %>
                 <% }); %>
               </div>
@@ -108,7 +108,7 @@
                         <% if (content.type === 'item') { %>
                           <%- include('./partials/menu-item', { item: content.data, pickT, lang, mt }) %>
                         <% } else if (content.type === 'set_menu') { %>
-                          <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt, compact: !subcategory.is_protected }) %>
+                          <%- include('./partials/set-menu', { setMenu: content.data, pickT, lang, mt }) %>
                         <% } %>
                       <% }); %>
                     </div>

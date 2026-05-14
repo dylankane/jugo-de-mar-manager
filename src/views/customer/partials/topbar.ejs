@@ -2,14 +2,18 @@
   <div class="menu-topbar-inner">
 
     <% if (locals.logoSvgUrl) { %>
-      <a href="https://www.somdemar.eu" class="topbar-logo-link" target="_blank" rel="noopener noreferrer" aria-label="<%= locals.restaurantName || '' %>">
+      <a href="/menu?lang=<%= lang %>" class="topbar-logo-link" aria-label="<%= locals.restaurantName || '' %>">
         <span class="topbar-logo" style="-webkit-mask-image: url('<%= locals.logoSvgUrl %>'); mask-image: url('<%= locals.logoSvgUrl %>')"></span>
       </a>
     <% } else { %>
-      <span></span>
+      <span class="topbar-slot"></span>
     <% } %>
 
     <%- include('./lang-selector', { lang, enabledLangs }) %>
+
+    <a href="https://www.somdemar.eu" class="topbar-website-link" target="_blank" rel="noopener noreferrer" aria-label="<%= locals.restaurantName || 'Website' %>">
+      <svg class="icon" aria-hidden="true"><use href="/customer/icons/sprite.svg#globe"></use></svg>
+    </a>
 
   </div>
 </header>

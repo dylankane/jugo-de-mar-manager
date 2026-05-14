@@ -5,6 +5,7 @@
   "menu.set_menu_label": "Set Menu",
   "menu.special": "Chef's Special",
   "menu.view_details": "Details",
+  "menu.courses_count": "courses",
   "menu.close": "Close",
 
   "club.banner.title": "Join Our Gourmet Club",
@@ -37,6 +38,9 @@
   "club_join.label_name": "Full Name",
   "club_join.label_email": "Email Address",
   "club_join.label_phone": "Phone Number",
+  "club_join.label_birthday": "Birthday",
+  "club_join.birthday_month": "Month",
+  "club_join.birthday_day": "Day",
   "club_join.optional": "Optional",
   "club_join.consent_text": "By joining the Gourmet Club, you consent to receive marketing communications via email. Your data is protected and will not be shared with third parties.",
   "club_join.btn_submit": "Join the Club",

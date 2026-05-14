@@ -8,7 +8,7 @@ const router = express.Router();
 // ── Public Sign-up Endpoint (no auth) ────────────────────────────────────────
 router.post('/join', async (req, res, next) => {
   try {
-    const { name, email, phone, marketing_consent } = req.body;
+    const { name, email, phone, birthday_month, birthday_day, marketing_consent } = req.body;
     
     if (!name?.trim()) {
       return res.status(400).json({ message: 'Name is required' });
@@ -27,6 +27,8 @@ router.post('/join', async (req, res, next) => {
         name:              name.trim(),
         email:             email.trim(),
         phone:             phone?.trim() || null,
+        birthday_month:    birthday_month ? parseInt(birthday_month, 10) : null,
+        birthday_day:      birthday_day   ? parseInt(birthday_day,   10) : null,
         marketing_consent: true,
         source:            'qr_menu',
         is_active:         true,
