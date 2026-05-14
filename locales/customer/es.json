@@ -1,0 +1,53 @@
+{
+  "menu.page_title": "Menú",
+  "menu.subtitle": "",
+  "menu.empty": "Menú próximamente...",
+  "menu.set_menu_label": "Menú Degustación",
+  "menu.special": "Especial del Chef",
+  "menu.view_details": "Detalles",
+  "menu.courses_count": "platos",
+  "menu.close": "Cerrar",
+
+  "club.banner.title": "Únete a Nuestro Club Gourmet",
+  "club.banner.desc": "Disfruta de ventajas exclusivas con cada reserva y participa en nuestro sorteo mensual para ganar un Menú Degustación Especial del Chef para dos personas.",
+  "club.banner.btn": "Únete Ahora",
+
+  "footer.tagline": "Buen Provecho",
+  "footer.legal": "Legal",
+
+  "info.dietary_title": "Información Dietética",
+  "info.allergens_title": "Alérgenos",
+  "info.no_info": "No hay información sobre alérgenos o dietas disponible.",
+
+  "cookie.text": "Utilizamos cookies analíticas para mejorar tu experiencia. Al continuar, aceptas su uso.",
+  "cookie.privacy_link": "Política de Privacidad",
+  "cookie.btn_decline": "Rechazar",
+  "cookie.btn_accept": "Aceptar",
+
+  "club_join.page_title": "Únete al Club Gourmet",
+  "club_join.subtitle": "Club Gourmet",
+  "club_join.title": "Únete a Nuestro Exclusivo Club Gourmet",
+  "club_join.desc": "Hazte miembro y disfruta de ventajas especiales cada vez que vengas a comer con nosotros. Además, participarás automáticamente en nuestro sorteo mensual para ganar un Menú Degustación Especial del Chef para dos personas.",
+  "club_join.benefit1_title": "Ventajas Exclusivas",
+  "club_join.benefit1_text": "Consigue recompensas y beneficios especiales con cada reserva",
+  "club_join.benefit2_title": "Sorteos Regulares",
+  "club_join.benefit2_text": "Gana un Menú Degustación Especial del Chef para dos personas",
+  "club_join.benefit3_title": "Trato VIP",
+  "club_join.benefit3_text": "Reservas prioritarias y atención personalizada",
+  "club_join.form_title": "Regístrate Hoy",
+  "club_join.label_name": "Nombre Completo",
+  "club_join.label_email": "Correo Electrónico",
+
+  "club_join.label_phone": "Número de Teléfono",
+  "club_join.label_birthday": "Fecha de Nacimiento",
+  "club_join.birthday_month": "Mes",
+  "club_join.birthday_day": "Día",
+  "club_join.optional": "Opcional",
+  "club_join.consent_text": "Al unirte al Club Gourmet, aceptas recibir comunicaciones de marketing por correo electrónico. Tus datos están protegidos y no serán compartidos con terceros.",
+  "club_join.btn_submit": "Unirse al Club",
+  "club_join.btn_back": "Volver al Menú",
+  "club_join.toast_success": "¡Bienvenido al Club Gourmet! Revisa tu correo electrónico para la confirmación.",
+  "club_join.toast_name_required": "Por favor, introduce tu nombre",
+  "club_join.toast_email_required": "Por favor, introduce tu correo electrónico",
+  "club_join.toast_error": "Algo salió mal. Por favor, inténtalo de nuevo."
+}
