@@ -571,9 +571,11 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 700;
   color: var(--clr-text);
   line-height: 1.4;
-  border-bottom: 2px solid var(--clr-accent);
   display: inline;
-  padding-bottom: 1px;
+  text-decoration: underline;
+  text-decoration-color: var(--clr-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .menu-item-price {
@@ -673,9 +675,11 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 700;
   color: var(--clr-text);
   line-height: 1.4;
-  border-bottom: 2px solid var(--clr-accent);
   display: inline;
-  padding-bottom: 1px;
+  text-decoration: underline;
+  text-decoration-color: var(--clr-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .set-menu-badge {
