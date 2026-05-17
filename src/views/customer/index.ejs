@@ -57,9 +57,6 @@
             <div class="category-header">
               <h2 class="category-title"><%= categoryTrans.name || 'Category' %></h2>
             </div>
-            <% if (categoryTrans.description) { %>
-              <p class="category-description"><%= categoryTrans.description %></p>
-            <% } %>
 
             <%
               const items = (category.menu_item_categories || [])
@@ -70,6 +67,15 @@
                 .map(smc => ({ type: 'set_menu', data: smc.set_menu, order: smc.display_order }));
               const allContent = [...items, ...setMenus].sort((a, b) => a.order - b.order);
             %>
+
+            <div class="category-info<%= allContent.length === 0 ? ' category-info--no-items' : '' %>">
+              <% if (categoryTrans.description) { %>
+                <p class="category-description"><%= categoryTrans.description %></p>
+              <% } %>
+              <% if (categoryTrans.public_notes) { %>
+                <p class="category-notes">- <%= categoryTrans.public_notes %></p>
+              <% } %>
+            </div>
 
             <% if (allContent.length > 0) { %>
               <div class="menu-items-grid">
@@ -95,14 +101,19 @@
                     .map(smc => ({ type: 'set_menu', data: smc.set_menu, order: smc.display_order }));
                   const subAllContent = [...subItems, ...subSetMenus].sort((a, b) => a.order - b.order);
                 %>
-                <% if (subAllContent.length > 0) { %>
-                  <div class="subcategory-section">
-                    <div class="subcategory-header">
-                      <h3 class="subcategory-title"><%= subTrans.name || 'Subcategory' %></h3>
-                      <% if (subTrans.description) { %>
-                        <p class="subcategory-description"><%= subTrans.description %></p>
-                      <% } %>
-                    </div>
+                <div class="subcategory-section">
+                  <div class="subcategory-header">
+                    <h3 class="subcategory-title"><%= subTrans.name || 'Subcategory' %></h3>
+                  </div>
+                  <div class="subcategory-info<%= subAllContent.length === 0 ? ' subcategory-info--no-items' : '' %>">
+                    <% if (subTrans.description) { %>
+                      <p class="subcategory-description"><%= subTrans.description %></p>
+                    <% } %>
+                    <% if (subTrans.public_notes) { %>
+                      <p class="category-notes">- <%= subTrans.public_notes %></p>
+                    <% } %>
+                  </div>
+                  <% if (subAllContent.length > 0) { %>
                     <div class="menu-items-grid">
                       <% subAllContent.forEach(content => { %>
                         <% if (content.type === 'item') { %>
@@ -112,16 +123,9 @@
                         <% } %>
                       <% }); %>
                     </div>
-                    <% if (subTrans.public_notes) { %>
-                      <p class="category-notes"><%= subTrans.public_notes %></p>
-                    <% } %>
-                  </div>
-                <% } %>
+                  <% } %>
+                </div>
               <% }); %>
-            <% } %>
-
-            <% if (categoryTrans.public_notes) { %>
-              <p class="category-notes"><%= categoryTrans.public_notes %></p>
             <% } %>
 
           </section>

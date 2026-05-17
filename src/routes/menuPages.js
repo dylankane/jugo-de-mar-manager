@@ -221,7 +221,7 @@ router.get('/', async (req, res, next) => {
       return directItems || directSetMenus || childItems || childSetMenus;
     }
 
-    const visibleCategories = categories.filter(catHasContent);
+    const visibleCategories = categories;
     const mt                = buildMt(staticRows, lang);
 
     res.render('customer/index', {
