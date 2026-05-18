@@ -1,15 +1,19 @@
 <%
-  const setMenuTrans = pickT(setMenu.translations);
-  const setMenuName  = setMenuTrans.name || 'Set Menu';
-  const setMenuDesc  = setMenuTrans.description || '';
-  const setMenuNotes = setMenuTrans.public_notes || '';
-  const courseCount  = (setMenu.courses || []).length;
+  const setMenuTrans     = pickT(setMenu.translations);
+  const setMenuName      = setMenuTrans.name || 'Set Menu';
+  const setMenuDesc      = setMenuTrans.description || '';
+  const setMenuNotes     = setMenuTrans.public_notes || '';
+  const setMenuPriceNote = setMenuTrans.price_note || '';
+  const courseCount      = (setMenu.courses || []).length;
 
-  const finalPrice = setMenu.has_discount
-    ? (setMenu.discount_type === 'percent'
-        ? Number(setMenu.price) * (1 - Number(setMenu.discount_value) / 100)
-        : Number(setMenu.price) - Number(setMenu.discount_value))
-    : Number(setMenu.price);
+  const hasPrice   = setMenu.price != null;
+  const finalPrice = hasPrice
+    ? (setMenu.has_discount
+        ? (setMenu.discount_type === 'percent'
+            ? Number(setMenu.price) * (1 - Number(setMenu.discount_value) / 100)
+            : Number(setMenu.price) - Number(setMenu.discount_value))
+        : Number(setMenu.price))
+    : null;
 %>
 <article class="set-menu-item set-menu-item--compact" data-set-menu-id="<%= setMenu.id %>">
   <div class="set-menu-header">
@@ -17,7 +21,16 @@
       <h4 class="set-menu-name"><%= setMenuName %></h4>
       <span class="set-menu-badge badge"><%= mt('menu.set_menu_label') %></span>
     </div>
-    <span class="set-menu-price">€<%= finalPrice.toFixed(2) %></span>
+    <% if (hasPrice || setMenuPriceNote) { %>
+      <div class="item-pricing">
+        <% if (hasPrice) { %>
+          <span class="set-menu-price">€<%= finalPrice.toFixed(2) %></span>
+        <% } %>
+        <% if (setMenuPriceNote) { %>
+          <span class="item-price-note"><%= setMenuPriceNote %></span>
+        <% } %>
+      </div>
+    <% } %>
   </div>
 
   <% if (setMenuDesc) { %>

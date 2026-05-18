@@ -3,12 +3,16 @@
   const itemName       = itemTrans.name         || 'Menu Item';
   const itemDesc       = itemTrans.description  || '';
   const itemNotes      = itemTrans.public_notes  || '';
+  const itemPriceNote  = itemTrans.price_note    || '';
 
-  const finalPrice = item.has_discount
-    ? (item.discount_type === 'percent'
-        ? parseFloat(item.price) * (1 - parseFloat(item.discount_value) / 100)
-        : parseFloat(item.price) - parseFloat(item.discount_value))
-    : parseFloat(item.price);
+  const hasPrice   = item.price != null;
+  const finalPrice = hasPrice
+    ? (item.has_discount
+        ? (item.discount_type === 'percent'
+            ? parseFloat(item.price) * (1 - parseFloat(item.discount_value) / 100)
+            : parseFloat(item.price) - parseFloat(item.discount_value))
+        : parseFloat(item.price))
+    : null;
 
   const dietaryList  = (item.dietary  || []).map(d => pickT(d.dietary_tag.translations).name).filter(Boolean);
   const allergenList = (item.allergens || []).map(a => pickT(a.allergen.translations).name).filter(Boolean);
@@ -22,7 +26,16 @@
         <span class="special-badge badge" aria-label="<%= mt('menu.special') %>"><%= mt('menu.special') %></span>
       <% } %>
     </div>
-    <span class="menu-item-price">€<%= finalPrice.toFixed(2) %></span>
+    <% if (hasPrice || itemPriceNote) { %>
+      <div class="item-pricing">
+        <% if (hasPrice) { %>
+          <span class="menu-item-price">€<%= finalPrice.toFixed(2) %></span>
+        <% } %>
+        <% if (itemPriceNote) { %>
+          <span class="item-price-note"><%= itemPriceNote %></span>
+        <% } %>
+      </div>
+    <% } %>
   </div>
 
   <% if (itemDesc) { %>
