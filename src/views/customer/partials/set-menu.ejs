@@ -68,7 +68,7 @@
           <div class="set-menu-course">
             <div class="set-menu-course-title"><%= courseTrans.name || 'Course' %></div>
             <% if (courseNoteTrans.notes) { %>
-              <div class="set-menu-course-note">- <%= courseNoteTrans.notes %></div>
+              <div class="set-menu-course-note"><%= courseNoteTrans.notes %></div>
             <% } %>
             <% if (courseSection.dishes && courseSection.dishes.length > 0) { %>
               <div class="set-menu-dishes">
