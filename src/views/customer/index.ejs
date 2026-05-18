@@ -68,7 +68,7 @@
               const allContent = [...items, ...setMenus].sort((a, b) => a.order - b.order);
             %>
 
-            <div class="category-info<%= allContent.length === 0 ? ' category-info--no-items' : '' %>">
+            <div class="category-info<%= (allContent.length === 0 && !(category.children && category.children.length > 0)) ? ' category-info--no-items' : '' %>">
               <% if (categoryTrans.description) { %>
                 <p class="category-description"><%= categoryTrans.description %></p>
               <% } %>

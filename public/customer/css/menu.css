@@ -447,7 +447,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ── Category Section ─────────────────────────────────────────────────────── */
 .category-section {
-  padding-top: var(--sp-7);
+  padding-top: var(--sp-8);
 }
 
 /* ── Category Header ──────────────────────────────────────────────────────── */
@@ -496,7 +496,6 @@ button { font-family: inherit; cursor: pointer; }
 
 .category-description {
   font-size: var(--fs-sm);
-  color: var(--clr-text-muted);
   font-style: italic;
   margin-top: var(--sp-2);
   line-height: 1.7;
